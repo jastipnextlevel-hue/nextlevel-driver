@@ -1,0 +1,3282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>NEXT LEVEL - Superapp & Driver</title>
+<!-- Library html2canvas untuk konversi struk gambar -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --primary-red: #e53935;
+  --dark-red: #b71c1c;
+  --header-red: #7a0f0f;
+  --accent-green: #25d366;
+  --gold: #ffca28;
+  --yellow: #facc15;
+  --purple: #7c3aed;
+  --bg-dark: #0f1015;
+  --soft-bg: #f8fafc;
+  --white: #ffffff;
+  --text-dark: #1e293b;
+  --gray-200: #e2e8f0;
+  --gray-300: #cbd5e1;
+  --gray-700: #334155;
+  --safe-top: 48px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+
+html, body { 
+  background-color: var(--bg-dark); 
+  color: var(--text-dark); 
+  width: 100%; 
+  min-height: 100vh; 
+  overflow-x: hidden; 
+  overflow-y: auto; 
+  display: block; 
+}
+
+.app-container { 
+  width: 100%; 
+  max-width: 480px; 
+  min-height: 100vh; 
+  margin: 0 auto; 
+  background: #b91c1c; 
+  position: relative; 
+  display: flex; 
+  flex-direction: column; 
+  box-shadow: 0 0 30px rgba(0,0,0,0.5); 
+}
+.screen { display: none; width: 100%; min-height: 100vh; flex-direction: column; }
+.screen.active { display: flex; }
+.hidden { display: none !important; }
+
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.font-bold { font-weight: 700; }
+.font-black { font-weight: 900; }
+.italic { font-style: italic; }
+.uppercase { text-transform: uppercase; }
+.w-full { width: 100%; }
+.mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; }
+.mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
+.p-2 { padding: 8px; } .p-3 { padding: 12px; }
+.gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; }
+.text-xs { font-size: 12px; } .text-sm { font-size: 14px; }
+
+.text-white { color: var(--white); }
+.text-yellow-300 { color: #fde047; }
+.text-yellow-400 { color: #facc15; }
+.text-green-400 { color: #4ade80; }
+.text-gray-200 { color: #e5e7eb; }
+.text-gray-300 { color: #d1d5db; }
+.text-red-300 { color: #fca5a5; }
+
+/* SCREEN 1: LANDING */
+#screen-landing { background: linear-gradient(145deg, var(--primary-red) 0%, var(--dark-red) 100%); justify-content: space-between; padding-top: var(--safe-top); }
+.hero-section { position: relative; width: 100%; height: 280px; display: flex; justify-content: center; align-items: center; overflow: visible; flex-shrink: 0; margin-top: 10px; }
+.red-circle-bg { position: absolute; width: 220px; height: 220px; background: radial-gradient(circle, #ff2a4b 0%, #d32f2f 100%); border-radius: 50%; box-shadow: 0 0 35px rgba(255, 23, 68, 0.4), inset 0 0 20px rgba(0,0,0,0.3); z-index: 1; }
+.center-logos { position: relative; z-index: 5; display: flex; align-items: center; justify-content: center; gap: 14px; }
+.logo-nextlevel-landing { width: 72px; height: 72px; border-radius: 50%; box-shadow: 0 6px 16px rgba(0,0,0,0.5); animation: pulse-slow 3s infinite ease-in-out; }
+.cross-mark { color: var(--white); font-size: 26px; font-weight: 900; text-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+.logo-whatsapp { width: 62px; height: 62px; background: var(--accent-green); border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4); animation: pulse-slow 3s infinite ease-in-out 1.5s; }
+.logo-whatsapp svg { width: 34px; height: 34px; fill: var(--white); }
+.floating-element { position: absolute; z-index: 4; font-size: 26px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); animation: float 4s ease-in-out infinite alternate; }
+.el-popcorn { top: 20px; left: 35px; animation-delay: 0s; } .el-boba { top: 20px; right: 35px; animation-delay: 0.8s; } .el-motor { top: 125px; left: 16px; animation-delay: 1.4s; } .el-coin { top: 125px; right: 16px; animation-delay: 2s; } .el-noodles { bottom: 15px; left: 40px; animation-delay: 2.6s; } .el-cart { bottom: 15px; right: 40px; animation-delay: 3.2s; }
+
+@keyframes float { 0% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-8px) rotate(5deg); } 100% { transform: translateY(4px) rotate(-5deg); } }
+@keyframes pulse-slow { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+.landing-bottom-card { background: var(--white); border-top-left-radius: 30px; border-top-right-radius: 30px; padding: 22px 20px 44px 20px; box-shadow: 0 -12px 30px rgba(0,0,0,0.25); z-index: 10; display: flex; flex-direction: column; gap: 12px; }
+.card-title-landing { text-align: center; font-size: 13px; font-weight: 800; color: var(--bg-dark); line-height: 1.35; }
+.feature-list-landing { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.feature-item-landing { display: flex; align-items: flex-start; gap: 10px; font-size: 11.5px; color: var(--gray-700); line-height: 1.4; background: var(--soft-bg); padding: 8px 10px; border-radius: 10px; border-left: 3px solid var(--primary-red); }
+.cta-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: linear-gradient(90deg, #00c853 0%, #25d366 100%); color: var(--white); text-align: center; padding: 14px 16px; border-radius: 14px; font-size: 12.5px; font-weight: 800; border: none; cursor: pointer; box-shadow: 0 6px 16px rgba(0, 200, 83, 0.35); }
+.cta-button:active { transform: scale(0.98); }
+.secondary-link { text-align: center; font-size: 11.5px; font-weight: 600; color: #64748b; cursor: pointer; text-decoration: underline; padding: 4px; }
+
+/* SCREEN 2: REGISTRASI */
+#screen-register { background: var(--soft-bg); }
+.reg-header-bar { background: var(--dark-red); border-bottom: 3px solid var(--yellow); display: flex; align-items: center; padding: var(--safe-top) 14px 14px 14px; gap: 10px; position: sticky; top: 0; z-index: 50; }
+.form-screen-inner { background: var(--white); padding: 18px 16px 80px; flex: 1; }
+.upload-card-box { border: 2px dashed #00c853; background: #f1f8f5; border-radius: 16px; padding: 14px; text-align: center; margin-bottom: 14px; }
+
+/* SCREEN LOGIN */
+#screen-login { background: linear-gradient(145deg, #7a0f0f 0%, #b91c1c 100%); justify-content: center; align-items: center; padding: 60px 18px 40px 18px; min-height: 100vh; }
+.login-card { background: var(--white); width: 100%; max-width: 380px; border-radius: 22px; padding: 24px 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.45); border: 3px solid var(--yellow); text-align: center; }
+
+/* SCREEN 3: DRIVER & HEADER */
+#screen-driver { background: #b91c1c; color: var(--white); padding-bottom: 90px; }
+.top-header { 
+  position: sticky; 
+  top: 0; 
+  left: 0; 
+  right: 0; 
+  z-index: 100; 
+  background: var(--header-red); 
+  border-bottom: 3px solid var(--yellow); 
+  display: flex; 
+  align-items: center; 
+  padding: var(--safe-top) 10px 10px 10px; 
+  gap: 8px; 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.hamburger { width: 38px; height: 38px; border: 2px solid var(--yellow); border-radius: 8px; background: #991b1b; color: var(--yellow); font-size: 20px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.card { background: rgba(0, 0, 0, 0.28); border: 2px solid var(--yellow); border-radius: 14px; padding: 12px; margin-top: 8px; }
+.card h2 { margin: 0 0 8px; color: var(--yellow); font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* FORM & BUTTONS */
+.field { flex: 1; min-width: 80px; background: #fff8e1; border: 1.5px solid #fbbf24; border-radius: 8px; padding: 5px 8px; text-align: left; }
+.field label { display: block; font-size: 8.5px; color: var(--header-red); font-weight: 800; text-transform: uppercase; margin-bottom: 2px; }
+.field input, .field textarea, .field select { width: 100%; border: 0; background: transparent; outline: none; font-size: 13px; color: #7f0f0f; font-weight: 700; }
+.btn-y { background: var(--yellow); color: var(--header-red); font-weight: 900; border: 0; border-radius: 10px; padding: 10px 14px; cursor: pointer; font-size: 12px; text-align: center; }
+.btn-sm { font-size: 10px; padding: 6px 10px; border-radius: 6px; border: 1.5px solid var(--yellow); background: var(--yellow); color: var(--header-red); font-weight: 900; cursor: pointer; text-align: center; }
+.btn-purple { background: var(--purple); color: var(--white); font-size: 11px; font-weight: 900; padding: 10px 14px; border: 2px solid var(--white); border-radius: 12px; cursor: pointer; }
+.btnTakeOrder { font-size: 12px; font-weight: 800; background: var(--yellow); color: #000; border: none; border-radius: 8px; padding: 8px; cursor: pointer; flex: 1; }
+
+/* DRAWER */
+.drawer { position: fixed; inset: 0; z-index: 300; display: none; }
+.drawer.open { display: block; }
+.drawer .bg { position: absolute; inset: 0; background: rgba(0,0,0,0.7); }
+.drawer .panel { 
+  position: absolute; 
+  left: 0; 
+  top: 0; 
+  bottom: 0; 
+  width: 300px; 
+  background: #6e0c0c; 
+  border-right: 3px solid var(--yellow); 
+  padding: 54px 14px 36px 14px; 
+  overflow-y: auto; 
+  display: flex; 
+  flex-direction: column; 
+}
+.menuItem { width: 100%; text-align: left; background: rgba(255,255,255,0.06); border: 1.5px solid var(--yellow); color: var(--yellow); padding: 10px 12px; border-radius: 10px; margin-bottom: 8px; font-weight: 800; cursor: pointer; font-size: 11.5px; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+/* KOTAK PROSES */
+.lokasiBox { border: 1.5px solid var(--yellow); border-radius: 10px; padding: 10px; margin-bottom: 10px; background: rgba(255,255,255,.07); }
+.prodCardBox { background: rgba(0, 0, 0, 0.22); border: 1px solid rgba(250, 204, 21, 0.5); border-radius: 10px; padding: 8px; margin-top: 8px; }
+.feeBadge { font-size: 11px; color: var(--yellow); background: #5a0c0c; border: 1.5px solid var(--yellow); border-radius: 6px; padding: 5px 6px; min-width: 85px; text-align: center; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+.extra-block { border: 1.5px dashed var(--yellow); border-radius: 10px; padding: 10px; margin-top: 10px; background: rgba(0,0,0,0.2); }
+.income-item-card { background: rgba(255,255,255,0.08); border: 1px solid rgba(250, 204, 21, 0.4); border-radius: 10px; padding: 10px; margin-bottom: 8px; cursor: pointer; transition: transform 0.15s ease; }
+.income-item-card:active { transform: scale(0.98); background: rgba(250, 204, 21, 0.18); }
+.lock-banner { background: #b91c1c; border: 2px solid var(--yellow); border-radius: 12px; padding: 12px; margin-bottom: 12px; color: var(--white); font-size: 11px; font-weight: 700; line-height: 1.4; }
+
+/* MODAL STRUK BILL */
+.billPage { position: fixed; inset: 0; z-index: 400; background: #e2e8f0; color: #111; display: none; flex-direction: column; }
+.billPage.open { display: flex; }
+.billTop { background: var(--bg-dark); color: var(--yellow); padding: var(--safe-top) 12px 12px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid var(--yellow); }
+.billContent { flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 110px; display: flex; justify-content: center; align-items: flex-start; }
+.billActions { position: fixed; bottom: 0; left: 0; right: 0; padding: 12px 16px 24px 16px; background: var(--bg-dark); border-top: 3px solid var(--yellow); display: flex; gap: 10px; z-index: 410; }
+.custom-modal { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; padding: 14px; }
+.custom-modal.open { display: flex; }
+.modal-inner { background: var(--white); color: #111; width: 100%; max-width: 440px; border-radius: 18px; padding: 18px; box-shadow: 0 15px 40px rgba(0,0,0,0.5); }
+
+/* NOTA STRUK RESMI */
+.receipt-paper { background: #ffffff; color: #000000; font-family: 'Courier New', Courier, monospace; padding: 18px 14px; width: 100%; max-width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 4px; }
+.receipt-dashed-line { border-bottom: 1.5px dashed #111111; margin: 10px 0; }
+.receipt-table { width: 100%; font-size: 10px; font-weight: 800; border-collapse: collapse; }
+.receipt-table td { vertical-align: top; padding-bottom: 4px; }
+.receipt-flex-between { display: flex; justify-content: space-between; align-items: flex-start; font-size: 11px; }
+
+.grid { display: grid; } .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.badge-pay { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer; border: 1.5px solid #cbd5e1; }
+.badge-pay.active { background: #facc15; border-color: #ca8a04; color: #000; }
+
+/* ================= GAYA CHAT WA & LIST INBOX ================= */
+.chat-inbox-item {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.chat-inbox-item:active { background: #f0fdf4; }
+.chat-avatar-round {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #25d366;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+  border: 2px solid #facc15;
+}
+.chat-room-driver {
+  background-color: #efeae2;
+  background-image: radial-gradient(#d6cfc7 1px, transparent 1px);
+  background-size: 20px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.chat-bubble-in {
+  background: #ffffff;
+  color: #111;
+  border-radius: 8px 8px 8px 0px;
+  padding: 7px 10px;
+  max-width: 84%;
+  font-size: 12.5px;
+  line-height: 1.4;
+  box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
+  margin-bottom: 6px;
+  align-self: flex-start;
+  word-break: break-word;
+}
+.chat-bubble-out {
+  background: #e7fed9;
+  color: #111;
+  border-radius: 8px 8px 0px 8px;
+  padding: 7px 10px;
+  max-width: 84%;
+  font-size: 12.5px;
+  line-height: 1.4;
+  box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
+  margin-bottom: 6px;
+  align-self: flex-end;
+  word-break: break-word;
+}
+.chat-bubble-meta {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 3px;
+  font-size: 9.5px;
+  color: #667781;
+  margin-top: 2px;
+}
+.check-blue { color: #53bdeb; font-weight: 900; }
+.chat-media-box {
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.chat-media-box img, .chat-media-box video {
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+  display: block;
+}
+.badge-antrean-merah {
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 999px;
+  margin-left: 4px;
+}
+
+/* 3 TOMBOL SKEMA SOP DI TOOLBAR BAWAH INPUT */
+.skema-toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px 10px 8px 10px;
+  background: #efeae2;
+  border-top: 1px dashed #cbd5e1;
+}
+.btn-skema-action {
+  background: #ffffff;
+  border: 1.5px solid #00a884;
+  color: #075e54;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 7px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.btn-skema-action:active {
+  background: #dcf8c6;
+  transform: scale(0.97);
+}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <!-- ================= 1. HALAMAN LANDING ================= -->
+  <section id="screen-landing" class="screen active">
+    <div class="hero-section">
+      <div class="red-circle-bg"></div>
+      <div class="floating-element el-popcorn">🍿</div>
+      <div class="floating-element el-boba">🧋</div>
+      <div class="floating-element el-motor">🏍️</div>
+      <div class="floating-element el-coin">🪙</div>
+      <div class="floating-element el-noodles">🍜</div>
+      <div class="floating-element el-cart">🛒</div>
+
+      <div class="center-logos">
+        <svg class="logo-nextlevel-landing" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="#181818" stroke="#facc15" stroke-width="3"/>
+          <g transform="rotate(-12 50 50)">
+            <text x="50" y="44" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Next</text>
+            <text x="50" y="68" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Level</text>
+            <line x1="18" y1="74" x2="82" y2="74" stroke="#e53935" stroke-width="3" stroke-linecap="round"/>
+          </g>
+        </svg>
+        <div class="cross-mark">X</div>
+        <div class="logo-whatsapp">
+          <svg viewBox="0 0 24 24">
+            <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.91C17.18 3.03 14.69 2 12.04 2M12.05 3.67C14.25 3.67 16.31 4.53 17.87 6.09C19.42 7.65 20.28 9.72 20.28 11.92C20.28 16.46 16.59 20.15 12.05 20.15C10.56 20.15 9.11 19.74 7.85 18.98L7.55 18.8L4.43 19.62L5.26 16.55L5.06 16.24C4.24 14.93 3.81 13.44 3.81 11.91C3.81 7.37 7.5 3.67 12.05 3.67M8.53 7.33C8.37 7.33 8.11 7.39 7.9 7.62C7.69 7.86 7.1 8.42 7.1 9.55C7.1 10.68 7.93 11.77 8.05 11.92C8.17 12.08 9.66 14.38 11.9 15.34C13.79 16.15 14.17 15.99 14.58 15.95C14.99 15.91 15.89 15.42 16.07 14.89C16.26 14.36 16.26 13.91 16.2 13.82C16.15 13.73 16 13.67 15.76 13.55C15.53 13.43 14.41 12.88 14.2 12.8C13.99 12.72 13.84 12.68 13.68 12.92C13.53 13.16 13.09 13.68 12.96 13.84C12.83 14 12.7 14.02 12.46 13.9C12.23 13.78 11.48 13.53 10.59 12.73C9.89 12.11 9.42 11.35 9.28 11.11C9.15 10.87 9.27 10.74 9.39 10.62C9.5 10.5 9.64 10.31 9.77 10.15C9.9 9.99 9.94 9.87 10.03 9.71C10.12 9.55 10.08 9.41 10.01 9.29C9.95 9.17 9.45 7.94 9.23 7.44C9.03 6.96 8.82 7.03 8.67 7.03C8.54 7.03 8.39 7.33 8.53 7.33Z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="landing-bottom-card">
+      <h1 class="card-title-landing">✨ SUPERAPP SEGALA KEBUTUHAN — SEMUA BISA, SEMUA GOKIL! ✨</h1>
+      <ul class="feature-list-landing">
+        <li class="feature-item-landing"><span style="margin-right:8px;">🔥</span><span>Beli makanan apapun, minuman apapun, belanja pasar & minimarket</span></li>
+        <li class="feature-item-landing"><span style="margin-right:8px;">📦</span><span>Ambil pesanan, ambil barang, antar jualanmu ke pembeli 🤗</span></li>
+        <li class="feature-item-landing"><span style="margin-right:8px;">🏍️</span><span>Ojek andalan, boncengan aman & nyaman ke mana aja!</span></li>
+        <li class="feature-item-landing"><span style="margin-right:8px;">💰</span><span>Jualin/beli emas, ambil kas ATM, antar barang berharga aman 🔒</span></li>
+        <li class="feature-item-landing"><span style="margin-right:8px;">💼</span><span>Jasa khusus: temenin di RS, antar hewan, gedor kost kesiangan, dll.</span></li>
+      </ul>
+      <button class="cta-button" onclick="goToRegister()">
+        🚀 DAFTAR SEKARANG CUMA 5 MENIT — KLIK DI SINI ➔
+      </button>
+      <div class="secondary-link" onclick="goToLoginScreen()">
+        🔑 Sudah Terdaftar? Masuk dengan Password
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 2. HALAMAN PENDAFTARAN & VERIFIKASI ================= -->
+  <section id="screen-register" class="screen">
+    <div class="reg-header-bar">
+      <svg style="width:36px; height:36px; flex-shrink:0;" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="48" fill="#181818" stroke="#facc15" stroke-width="3"/>
+        <g transform="rotate(-12 50 50)">
+          <text x="50" y="44" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Next</text>
+          <text x="50" y="68" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Level</text>
+        </g>
+      </svg>
+      <div>
+        <div class="font-black text-yellow-300" style="font-size:12px;">PENDAFTARAN & VERIFIKASI AKUN</div>
+        <div class="text-white" style="font-size:9px;">ID: <span id="lbl-id-pel">...</span></div>
+      </div>
+    </div>
+
+    <div class="form-screen-inner">
+      <div class="flex items-center gap-2 mb-3" style="padding:12px; background:#fffbeb; border:1px solid #fcd34d; border-radius:12px; color:#78350f; font-size:12px;">
+        <span style="font-size:24px;">🫡👍</span>
+        <div><b>Verifikasi Keaslian Diri!</b> Ambil video rekaman wajah secara langsung saat ini. Pastikan tanpa penutup wajah!</div>
+      </div>
+
+      <div class="upload-card-box" id="boxVideoWajah">
+        <div class="font-bold mb-1" style="font-size:12px; color:#1e3a8a;">🤳 1. Lampirkan Video Wajah (Kedip Mata 3x)</div>
+        <div class="font-bold p-2 mb-3" style="font-size:10px; color:#dc2626; background:#fee2e2; border-radius:8px;">⚠️ Ambil rekaman video selfie saat ini juga, berkedip 3 kali, tanpa topi, helm, masker, atau kacamata!</div>
+        
+        <div class="flex-col gap-2 flex">
+          <label class="cta-button" style="background:#2563eb;">
+            📹 BUKA KAMERA & REKAM VIDEO WAJAH
+            <input type="file" accept="video/*" capture="user" class="hidden" onchange="handleNativeVideoWajah(this)">
+          </label>
+        </div>
+
+        <div id="videoSuccessBox" class="hidden mt-3 p-3" style="background:#d1fae5; border:1px solid #10b981; border-radius:12px;">
+          <div class="font-black" style="color:#065f46; font-size:12px;">✅ REKAMAN VIDEO KEDIP DITERIMA!</div>
+          <div class="font-bold mt-1" style="font-size:10px; color:#374151;">Video wajah Anda saat ini telah tervalidasi asli.</div>
+        </div>
+      </div>
+
+      <div class="upload-card-box" id="boxFotoKtp">
+        <div class="font-bold mb-1" style="font-size:12px; color:#1e3a8a;">🪪 2. Lampirkan Foto KTP Asli</div>
+        <div class="font-bold p-2 mb-3" style="font-size:10px; color:#4b5563; background:#f3f4f6; border-radius:8px;">⚠️ Ambil foto KTP Anda saat ini secara jelas dan tidak buram (bukan foto stok galeri).</div>
+        
+        <div class="flex-col gap-2 flex">
+          <label class="cta-button" style="background:#059669;">
+            📷 BUKA KAMERA & AMBIL FOTO KTP
+            <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleNativeKtp(this)">
+          </label>
+        </div>
+
+        <div id="ktpSuccessBox" class="hidden mt-3 p-3" style="background:#d1fae5; border:1px solid #10b981; border-radius:12px;">
+          <div class="font-black" style="color:#065f46; font-size:12px;">✅ FOTO KTP DITERIMA!</div>
+          <div class="font-bold mt-1" style="font-size:10px; color:#374151;">Identitas KTP Anda berhasil tercatat aman.</div>
+        </div>
+      </div>
+
+      <div class="upload-card-box" style="border-color:#2563eb; background:#eff6ff;">
+        <div class="font-bold mb-1" style="font-size:12px; color:#1e3a8a;">🔑 3. Buat Password Keamanan Anda</div>
+        <div class="font-bold p-2 mb-3" style="font-size:10px; color:#1e40af; background:#dbeafe; border-radius:8px;">
+          Password ini akan digunakan setiap kali Anda ingin masuk kembali ke aplikasi setelah keluar.
+        </div>
+        <div class="field mb-2" style="background:#ffffff; border-color:#93c5fd;">
+          <label style="color:#1e3a8a;">MASUKKAN PASSWORD BARU *</label>
+          <input type="password" id="regPassword" placeholder="Buat password Anda..." style="color:#1e293b;">
+        </div>
+        <div class="field" style="background:#ffffff; border-color:#93c5fd;">
+          <label style="color:#1e3a8a;">ULANGI PASSWORD *</label>
+          <input type="password" id="regPasswordConfirm" placeholder="Ketik ulang password..." style="color:#1e293b;">
+        </div>
+      </div>
+
+      <button class="cta-button mt-4" style="padding:14px;" onclick="finishRegister()">SELESAI & MASUK BERANDA ➔</button>
+    </div>
+  </section>
+
+  <!-- ================= 2B. HALAMAN MASUK PASSWORD ================= -->
+  <section id="screen-login" class="screen">
+    <div class="login-card">
+      <div class="flex justify-center mb-3">
+        <svg style="width:68px; height:68px;" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="#181818" stroke="#facc15" stroke-width="3"/>
+          <g transform="rotate(-12 50 50)">
+            <text x="50" y="44" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Next</text>
+            <text x="50" y="68" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Level</text>
+            <line x1="18" y1="74" x2="82" y2="74" stroke="#e53935" stroke-width="3" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+      <h2 class="font-black" style="font-size:15px; color:#0f172a;">🔑 MASUK APLIKASI DRIVER</h2>
+      <p class="mt-1 mb-3" style="font-size:11px; color:#475569; font-weight:600;">Silakan masukkan password Anda untuk melanjutkan pekerjaan.</p>
+      
+      <div class="field mb-3" style="background:#f8fafc; border-color:#cbd5e1; padding:8px 10px;">
+        <label style="color:#334155;">PASSWORD ANDA</label>
+        <input type="password" id="loginPasswordInput" placeholder="Ketik password..." style="font-size:14px; color:#0f172a;">
+      </div>
+
+      <button class="cta-button" onclick="verifyLoginPassword()">🔓 MASUK SEKARANG ➔</button>
+    </div>
+  </section>
+
+  <!-- ================= 3. APLIKASI DRIVER & KALKULATOR UTAMA ================= -->
+  <section id="screen-driver" class="screen">
+    <header class="top-header">
+      <button class="hamburger" onclick="toggleDrawer()" aria-label="Buka Menu">☰</button>
+      <div onclick="openPageDriver('home')" style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+        <svg style="width:34px; height:34px; flex-shrink:0;" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="48" fill="#181818" stroke="#facc15" stroke-width="3"/>
+          <g transform="rotate(-12 50 50)">
+            <text x="50" y="44" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Next</text>
+            <text x="50" y="68" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Level</text>
+            <line x1="18" y1="74" x2="82" y2="74" stroke="#e53935" stroke-width="3" stroke-linecap="round"/>
+          </g>
+        </svg>
+        <div>
+          <div class="font-black text-yellow-300" style="font-size:11.5px; line-height:1.2;">NEXT LEVEL</div>
+          <div class="font-bold" style="font-size:8.5px; color:#fef08a;">DRIVER SYSTEM</div>
+        </div>
+      </div>
+      
+      <div style="margin-left:auto; display:flex; align-items:center; gap:5px;">
+        <button onclick="panggilBantuanSOS()" style="background:#dc2626; color:white; font-size:10px; font-weight:900; padding:6px 7px; border-radius:8px; border:1px solid #facc15; cursor:pointer;" title="Bantuan Darurat Armada">
+          🚨 SOS
+        </button>
+        <button onclick="openPageDriver('chat-inbox')" style="background:#059669; color:white; font-size:10px; font-weight:900; padding:6px 8px; border-radius:8px; display:flex; align-items:center; gap:4px; border:1px solid #facc15; cursor:pointer;">
+          💬 Chat <span id="headerChatBadge" class="badge-antrean-merah">1</span>
+        </button>
+        <button onclick="kunciAplikasi()" style="background:#1e293b; color:#fde047; font-size:9.5px; font-weight:900; padding:6px 7px; border-radius:8px; border:1px solid #facc15; cursor:pointer;" title="Kunci Aplikasi">
+          🔒 Keluar
+        </button>
+      </div>
+    </header>
+
+    <div class="drawer" id="drawer">
+      <div class="bg" onclick="toggleDrawer()"></div>
+      <div class="panel">
+        <div class="flex-col items-center mb-3 flex">
+          <svg style="width:62px; height:62px; flex-shrink:0;" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="48" fill="#181818" stroke="#facc15" stroke-width="3"/>
+            <g transform="rotate(-12 50 50)">
+              <text x="50" y="44" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Next</text>
+              <text x="50" y="68" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Level</text>
+              <line x1="18" y1="74" x2="82" y2="74" stroke="#e53935" stroke-width="3" stroke-linecap="round"/>
+            </g>
+          </svg>
+          <div class="text-yellow-400 font-black mt-2" style="font-size:12px;">MENU UTAMA NEXT LEVEL</div>
+        </div>
+
+        <button class="menuItem" onclick="openPageDriver('home')">🏠 HALAMAN UTAMA</button>
+        <button class="menuItem" onclick="openPageDriver('chat-inbox')">
+          💬 LIVE CHAT & PESANAN MASUK <span id="drawerChatBadge" class="badge-antrean-merah">1</span>
+        </button>
+        <button class="menuItem" onclick="openPageDriver('ambil-order')">🚨 DISPATCH ORDER MANUAL</button>
+        
+        <div id="menuSetorLockNotice" class="lock-banner hidden" role="alert" style="font-size:10px; padding:8px 10px; margin-bottom:8px;">
+          🔒 <b>4 MENU BILL TERKUNCI!</b><br>Setoran wajib (T) mencapai <span id="menuSetorLockT">Rp 50.000</span>. Wajib setor kas ke Owner &amp; masukkan Token OTP di menu Keuangan Driver.
+        </div>
+        <button class="menuItem billLockMenu" data-label="🛍️ JASTIP" onclick="openPageDriver('jastip')">🛍️ JASTIP</button>
+        <button class="menuItem billLockMenu" data-label="🏍️ OJEK PANGGILAN" onclick="openPageDriver('ojek')">🏍️ OJEK PANGGILAN</button>
+        <button class="menuItem billLockMenu" data-label="📦 AMBIL PESANAN (SUDAH DIBAYAR)" onclick="openPageDriver('ambil')">📦 AMBIL PESANAN (SUDAH DIBAYAR)</button>
+        <button class="menuItem billLockMenu" data-label="⭐ ORDERAN CUSTOM / KHUSUS" onclick="openPageDriver('custom')">⭐ ORDERAN CUSTOM / KHUSUS</button>
+
+        <div class="p-2 mt-1 mb-2" style="border-radius:12px; border:2px solid #facc15; background:rgba(0,0,0,0.4); text-align:left; cursor:pointer; flex-shrink:0;" onclick="openPageDriver('keuangan-detail')">
+          <div class="flex justify-between items-center mb-1">
+            <div class="text-yellow-400 font-black" style="font-size:11px;">📊 KEUANGAN DRIVER</div>
+            <span style="font-size:9px; background:#facc15; color:#000; padding:2px 6px; border-radius:4px; font-weight:700;">Rincian ➔</span>
+          </div>
+          <div class="text-gray-200" style="font-size:10px;">
+            <div class="flex justify-between" style="padding:2px 0;">
+              <span>Pendapatan Driver:</span>
+              <b class="text-green-400" id="dashPendapatanDriver">Rp 0</b>
+            </div>
+            <div class="italic mb-1 text-gray-300" style="font-size:8px;">(Ongkos + Fee Produk + Fee Kesepakatan + Tunggu)</div>
+            <div class="flex justify-between" style="padding:2px 0; border-top:1px solid rgba(250,204,21,0.4); margin-top:4px;">
+              <span class="text-yellow-300 font-bold">Total Setoran Wajib (T):</span>
+              <b class="text-yellow-300" id="dashTotalBayarT">Rp 0</b>
+            </div>
+            <div class="italic" style="font-size:8px; color:rgba(254,240,138,0.8);">*Wajib disetor jika T sudah mencapai Rp 50.000</div>
+          </div>
+        </div>
+
+        <button class="menuItem" onclick="openPageDriver('rating-history')">⭐ PENILAIAN & ULASAN PELANGGAN</button>
+        
+        <button class="menuItem" style="background:#1e3a8a; border-color:#60a5fa; color:#93c5fd;" onclick="bukaModalLoginOwner()">
+          🔑 GENERATOR TOKEN (OWNER)
+        </button>
+
+        <button class="menuItem" style="background:rgba(220,38,38,0.3); border-color:#f87171; color:#fca5a5;" onclick="panggilBantuanSOS()">🚨 LAPOR KENDALA JALAN (SOS)</button>
+        <button class="menuItem" style="background:rgba(0,0,0,0.35); border-color:#f87171; color:#fca5a5;" onclick="kunciAplikasi()">🔒 KUNCI / KELUAR APLIKASI</button>
+        <button class="btn-sm text-white w-full mt-2" style="background:transparent; border-color:white; padding:10px 0; flex-shrink:0;" onclick="toggleDrawer()">❌ TUTUP MENU</button>
+      </div>
+    </div>
+
+    <main class="p-3">
+      <div id="unreportedLockBanner" class="lock-banner hidden">
+        🔒 <b>AMBIL ORDERAN TERKUNCI!</b><br>Anda belum mengirimkan laporan keuangan hari kemarin kepada admin. Buka menu <b>Keuangan Driver</b> lalu klik tombol <b>"Kirim Laporan Admin"</b> untuk membuka akses.
+      </div>
+
+      <!-- SUB-HALAMAN: HOME (FORM DRIVER) -->
+      <div id="driver-page-home">
+        <div class="card" id="formCard">
+          <div class="flex justify-center mb-2">
+            <svg style="width:64px; height:64px;" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="48" fill="#181818" stroke="#facc15" stroke-width="3"/>
+              <g transform="rotate(-12 50 50)">
+                <text x="50" y="44" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Next</text>
+                <text x="50" y="68" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Level</text>
+                <line x1="18" y1="74" x2="82" y2="74" stroke="#e53935" stroke-width="3" stroke-linecap="round"/>
+              </g>
+            </svg>
+          </div>
+          <h2>📋 FORM DRIVER - PENDAFTARAN LOT</h2>
+          
+          <div class="flex gap-2">
+            <div class="field"><label>NAMA DRIVER *</label><input id="fDriver" placeholder="Nama Anda" oninput="saveDriverFromForm()"></div>
+            <div class="field"><label>MOTOR *</label><input id="fMotor" placeholder="Vario 160 / Beat" oninput="saveDriverFromForm()"></div>
+          </div>
+
+          <div class="flex gap-2 mt-2">
+            <div class="field"><label>TGL AUTO</label><input id="fTgl" readonly style="background:#fff3cd"></div>
+            <div class="field"><label>ORDERAN KE (LOT) *</label><input id="fLot" type="text" inputmode="numeric" value="0" oninput="onInputLotAwal()"></div>
+          </div>
+
+          <div class="flex mt-2 w-full" style="gap:6px;">
+            <div class="field" style="flex:1 1 0; min-width:0; padding:4px 6px;"><label>K (KAS)</label><input id="fK" type="text" inputmode="numeric" value="0" oninput="recalcLotFormManual()"></div>
+            <div class="field" style="flex:1 1 0; min-width:0; padding:4px 6px;"><label>A (ADMIN)</label><input id="fA" type="text" inputmode="numeric" value="0" oninput="recalcLotFormManual()"></div>
+            <div class="field" style="flex:1 1 0; min-width:0; padding:4px 6px;"><label>F (FEE)</label><input id="fF" type="text" inputmode="numeric" value="0" oninput="recalcLotFormManual()"></div>
+            <div class="field" style="flex:1 1 0; min-width:0; padding:4px 6px;"><label>T (TOTAL)</label><input id="fT" type="text" inputmode="numeric" value="0" readonly style="background:#fff3cd"></div>
+          </div>
+
+          <div class="flex gap-2 mt-2">
+            <div class="field"><label>BANK *</label><input id="fBank" placeholder="BCA / BRI / Mandiri" oninput="saveDriverFromForm()"></div>
+            <div class="field"><label>NO. REK (ANGKA) *</label><input id="fRek" type="text" inputmode="numeric" placeholder="Contoh: 010810290139" oninput="saveDriverFromForm()"></div>
+          </div>
+
+          <div class="field mt-2"><label>ATAS NAMA REKENING *</label><input id="fAn" placeholder="Nama Pemilik Rekening" oninput="saveDriverFromForm()"></div>
+
+          <button class="btn-y w-full mt-3" onclick="simpanDriver()">💾 SIMPAN DATA DRIVER</button>
+        </div>
+
+        <div id="haloBox" class="card hidden text-center">
+          <div class="py-3">
+            <div class="flex justify-center mb-2">
+              <svg style="width:56px; height:56px;" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="48" fill="#181818" stroke="#facc15" stroke-width="3"/>
+                <g transform="rotate(-12 50 50)">
+                  <text x="50" y="44" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Next</text>
+                  <text x="50" y="68" text-anchor="middle" font-size="25" font-weight="900" font-style="italic" fill="#facc15">Level</text>
+                  <line x1="18" y1="74" x2="82" y2="74" stroke="#e53935" stroke-width="3" stroke-linecap="round"/>
+                </g>
+              </svg>
+            </div>
+            <div class="font-black text-yellow-300" style="font-size:24px;">Halo <span id="haloName">Driver</span> 👋</div>
+            <div class="font-bold text-white font-mono mt-2" style="font-size:12px; background:rgba(0,0,0,0.4); padding:8px 12px; border-radius:8px; border:1px solid #facc15;" id="haloLot"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SUB-HALAMAN: BERANDA DAFTAR CHAT (WHATSAPP INBOX) ================= -->
+      <div id="driver-page-chat-inbox" class="hidden">
+        <div class="card p-0" style="overflow:hidden; border:2px solid #25d366; background:#ffffff;">
+          <div class="p-3" style="background:#075e54; color:#ffffff; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="font-black" style="font-size:14px;">WhatsApp Driver Next Level</div>
+              <div style="font-size:10px; color:#dcf8c6;">Daftar Pesanan & Percakapan Pelanggan</div>
+            </div>
+            <button class="btn-sm" style="background:#25d366; color:#ffffff; border:none;" onclick="openPageDriver('home')">Beranda ➔</button>
+          </div>
+
+          <!-- TAB FILTER ANTREAN -->
+          <div class="flex" style="background:#f0f2f5; border-bottom:1px solid #cbd5e1;">
+            <button id="tabChatAntrean" class="flex-1 py-2 font-black" style="font-size:11px; background:#25d366; color:#ffffff; border:none; cursor:pointer;" onclick="switchTabInbox('antrean')">
+              📥 Belum Diambil (<span id="countInboxAntrean">1</span>)
+            </button>
+            <button id="tabChatAktif" class="flex-1 py-2 font-bold" style="font-size:11px; background:#f0f2f5; color:#4b5563; border:none; cursor:pointer;" onclick="switchTabInbox('aktif')">
+              🛵 Pesanan Saya (<span id="countInboxAktif">0</span>)
+            </button>
+          </div>
+
+          <!-- DAFTAR CHAT PELANGGAN -->
+          <div id="inboxListContainer" style="min-height:300px; max-height:480px; overflow-y:auto;"></div>
+        </div>
+      </div>
+
+      <!-- ================= SUB-HALAMAN: RUANG CHAT LANGSUNG DRIVER ================= -->
+      <div id="driver-page-chat-room" class="hidden">
+        <div class="card p-0 flex-col" style="overflow:hidden; border:2px solid #25d366; background:#efeae2; min-height:calc(100vh - 120px); display:flex;">
+          <!-- Header Room Chat Driver -->
+          <div class="p-2.5 flex items-center justify-between" style="background:#ffffff; color:#111b21; border-bottom:1px solid #e5e7eb; flex-shrink:0;">
+            <div class="flex items-center gap-2">
+              <button class="btn-sm" style="background:transparent; border:none; font-size:16px; color:#54656f; padding:0 4px;" onclick="openPageDriver('chat-inbox')">←</button>
+              <div class="chat-avatar-round" style="width:38px; height:38px; font-size:16px;">👤</div>
+              <div>
+                <div class="font-bold" style="font-size:13px; line-height:1.2;" id="roomTargetCustomer">Pelanggan Next Level</div>
+                <div style="font-size:10px; color:#1f9a55;" id="roomTargetSub">Layanan: Jastip Belanja</div>
+              </div>
+            </div>
+            
+            <div class="flex gap-1">
+              <button class="btn-sm" style="background:#facc15; color:#000; font-weight:900; border:none; font-size:10px;" onclick="bukaFormBillDariChat()">
+                🧾 Buat Bill
+              </button>
+            </div>
+          </div>
+
+          <!-- Pesan Obrolan -->
+          <div class="chat-room-driver p-3" id="roomMessageList" style="flex:1; overflow-y:auto; min-height:220px;"></div>
+
+          <!-- Wadah Bilah Input & 3 Tombol Skema SOP -->
+          <div style="background:#ffffff; border-top:1px solid #d1d5db; flex-shrink:0;">
+            <div class="p-2 flex items-center gap-2">
+              <input type="file" id="driver-file-galeri" accept="image/*,video/*" style="display:none" onchange="kirimMediaDriver(event)">
+              <input type="file" id="driver-file-kamera" accept="image/*" capture="environment" style="display:none" onchange="kirimMediaDriver(event)">
+
+              <label for="driver-file-galeri" style="cursor:pointer; font-size:19px; color:#54656f;" title="Pilih dari Galeri">📎</label>
+              <label for="driver-file-kamera" style="cursor:pointer; font-size:19px; color:#54656f;" title="Buka Kamera">📷</label>
+
+              <input id="driverChatTextInput" class="flex-1 p-2 outline-none" style="background:#f0f2f5; border-radius:24px; font-size:13px; color:#111b21; padding:7px 14px; border:none;" placeholder="Ketik pesan...">
+              <button class="font-bold flex items-center justify-center text-white" style="background:#00a884; width:36px; height:36px; border-radius:50%; border:none; cursor:pointer;" onclick="kirimPesanDriver()">
+                ➤
+              </button>
+            </div>
+
+            <!-- 3 TOMBOL SKEMA SOP DI BAWAH BILAH INPUT -->
+            <div class="skema-toolbar">
+              <button type="button" class="btn-skema-action" onclick="lampirkanSkemaFeeProduk()">
+                <span>📋</span> Fee Produk
+              </button>
+              <button type="button" class="btn-skema-action" onclick="lampirkanSkemaUangTunggu()">
+                <span>⏳</span> Uang Tunggu
+              </button>
+              <button type="button" class="btn-skema-action" style="border-color:#2563eb; color:#1e40af;" onclick="lampirkanSkemaLuarArea()">
+                <span>🗺️</span> Luar Area
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================= SUB-HALAMAN: BUKU KAS & RINCIAN KEUANGAN ================= -->
+      <div id="driver-page-keuangan-detail" class="hidden">
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <h2>📊 BUKU KAS & RINCIAN KEUANGAN</h2>
+            <button class="btn-sm" onclick="openPageDriver('home')">➔ KEMBALI</button>
+          </div>
+
+          <div class="flex gap-2 mb-3">
+            <button id="btnTabHariIni" class="btn-sm flex-1 py-2 font-black" style="background:#facc15; color:#000; border:none;" onclick="filterKeuanganHari('today')">📅 Hari Ini</button>
+            <button id="btnTabHariKemarin" class="btn-sm flex-1 py-2 font-bold" style="background:rgba(0,0,0,0.4); color:#fde047; border:1px solid #facc15;" onclick="filterKeuanganHari('history')">📖 Riwayat Pesanan</button>
+          </div>
+
+          <div class="flex gap-2 mb-2">
+            <button class="btn-y flex-1" style="background:#059669; color:white; font-size:11px;" onclick="kirimLaporanTeksKeAdmin()">
+              📲 REKAP KE ADMIN
+            </button>
+            <button class="btn-y flex-1" style="background:#2563eb; color:white; font-size:11px;" onclick="bukaModalResetT()">
+              🔄 LUNAS SETOR (RESET T)
+            </button>
+          </div>
+          <div class="text-center italic mb-3" style="font-size:8.5px; color:rgba(254,240,138,0.8);">*Wajib memasukkan Token OTP dari Owner setelah Anda transfer setoran.</div>
+
+          <div class="p-3 mb-3" style="background:#1e2029; border:2px solid #facc15; border-radius:12px; color:white;">
+            <div class="font-bold uppercase" style="font-size:10px; color:#fde047;" id="labelRincianPeriode">Ringkasan Hari Ini:</div>
+            <div class="grid grid-cols-2 gap-2 mt-1 p-2" style="background:rgba(0,0,0,0.4); border-radius:8px; border:1px solid rgba(255,255,255,0.1); margin-bottom:8px;">
+              <div><span style="font-size:9px; color:#d1d5db;">Total Pendapatan:</span><div class="font-black text-green-400" style="font-size:14px;" id="detailTotalPendapatan">Rp 0</div></div>
+              <div><span style="font-size:9px; color:#d1d5db;">Setoran Wajib (T):</span><div class="font-black text-yellow-300" style="font-size:14px;" id="detailTotalSetoranT">Rp 0</div></div>
+            </div>
+
+            <div class="italic flex items-center gap-1 mb-1.5" style="font-size:8.5px; color:rgba(254,240,138,0.8);">💡 Klik pada salah satu orderan untuk me-review struk bill:</div>
+            
+            <div class="font-bold mb-1" style="font-size:10px; color:#e5e7eb;">Rincian Orderan:</div>
+            <div id="listOrderanKeuangan" class="flex-col flex gap-2"></div>
+            <div id="emptyOrderanKeuangan" class="text-center p-3" style="font-size:12px; border:1px dashed rgba(250,204,21,0.4); border-radius:8px; color:#fef08a;">Belum ada orderan yang tercatat.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-HALAMAN: AMBIL PESANAN DISPATCH MANUAL -->
+      <div id="driver-page-ambil-order" class="hidden">
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <h2>🚨 ORDERAN MASUK (DISPATCH)</h2>
+            <button class="btn-sm" onclick="openPageDriver('home')">➔ KEMBALI</button>
+          </div>
+
+          <div id="lockWarningBox" class="lock-banner hidden">
+            ⚠️ <b>PERINGATAN SETORAN MENUMPUK!</b><br>Total setoran wajib (T) sudah mencapai <span id="lockWarningT">Rp 50.000</span>. Segera lakukan transfer setoran ke rekening Owner lalu minta Token OTP untuk mereset T di menu Keuangan Driver.
+          </div>
+
+          <div class="flex-col flex" style="gap:10px;">
+            <div class="p-3" style="background:rgba(255,255,255,0.1); border:1px solid rgba(250,204,21,0.5); border-radius:12px;">
+              <div class="flex justify-between">
+                <div>
+                  <span class="font-black" style="background:#facc15; color:#000; font-size:9px; padding:2px 6px; border-radius:4px;">JASTIP MAKANAN</span>
+                  <div class="font-bold text-yellow-300 mt-1" style="font-size:14px;">Ayam Geprek Sambal Bawang (2 Porsi)</div>
+                  <div style="font-size:11px; color:#e5e7eb;">📍 Warung Dago ➔ Jl. Juanda No. 128</div>
+                  <div style="font-size:10px; color:#d1d5db; margin-top:2px;">Ongkir: Rp 10.000 — Fee: Rp 4.000</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-green-400" style="font-size:12px;">Total: Rp 54.000</div>
+                  <div style="font-size:9px; color:#d1d5db;">Cust: Budi</div>
+                </div>
+              </div>
+              <div class="flex gap-2 mt-2">
+                <button class="btnTakeOrder" onclick="ambilOrderanMock('Ayam Geprek Sambal Bawang', 14000, 2)">✅ AMBIL PESANAN</button>
+                <button class="btn-sm text-white" style="background:#059669; border:none;" onclick="bukaChatDariCust('Budi', 'Jastip Makanan')">💬 Chat Cust</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-HALAMAN: JASTIP -->
+      <div id="driver-page-jastip" class="hidden">
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <h2>🛍️ JASTIP</h2>
+            <button class="btn-sm btn-back-context" onclick="handleTombolKembaliForm('jastip')">➔ KEMBALI</button>
+          </div>
+
+          <div class="p-2 mb-3" style="background:rgba(37,211,102,0.15); border:1.5px solid #25d366; border-radius:10px;">
+            <div class="font-bold text-yellow-300" style="font-size:10px; margin-bottom:4px;">📱 UPDATE STATUS OTOMATIS KE WHATSAPP KONSUMEN:</div>
+            <div class="grid grid-cols-3 gap-1">
+              <button class="btn-sm text-white" style="background:#075e54; font-size:8.5px; padding:6px 2px;" onclick="kirimKabarWaCepat('otw_toko')">🛵 OTW Toko</button>
+              <button class="btn-sm text-white" style="background:#075e54; font-size:8.5px; padding:6px 2px;" onclick="kirimKabarWaCepat('antre')">🛍️ Sedang Antre</button>
+              <button class="btn-sm text-white" style="background:#075e54; font-size:8.5px; padding:6px 2px;" onclick="kirimKabarWaCepat('otw_antar')">🚀 OTW Antar</button>
+            </div>
+          </div>
+          
+          <div id="jastipLokasi"></div>
+          
+          <div class="flex gap-2 items-center my-3">
+            <button class="btn-sm flex-1 py-2" onclick="addJastipLokasi()">+ TAMBAH LOKASI</button>
+            <button class="btn-sm flex-1 py-2 btn-purple" style="border-color:white;" onclick="openTambahJasaModal('jastip')">💼 + TAMBAH JASA LAIN</button>
+          </div>
+
+          <div id="jastipExtraServices" class="flex-col flex gap-2 mb-3"></div>
+
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <div class="field"><label>JARAK KM</label><input id="jJarak" type="text" inputmode="decimal" value="1" oninput="saveJastipState()"></div>
+            <div class="field"><label>TUNGGU MENIT</label><input id="jTunggu" type="text" inputmode="numeric" value="0" oninput="saveJastipState()"></div>
+            <div class="field"><label>PARKIR RP</label><input id="jParkir" type="text" inputmode="numeric" value="0" oninput="saveJastipState()"></div>
+            <div class="field"><label>KESEPAKATAN RP</label><input id="jSepakat" type="text" inputmode="numeric" value="0" oninput="saveJastipState()"></div>
+          </div>
+
+          <div class="p-2 mt-2 mb-1" style="background:rgba(0,0,0,0.3); border-radius:8px;">
+            <label style="font-size:9px; color:#fde047; font-weight:800; display:block; margin-bottom:5px;">METODE PEMBAYARAN KONSUMEN:</label>
+            <div class="flex gap-2">
+              <button type="button" class="badge-pay active flex-1" id="payMethodCash" onclick="pilihMetodeBayar('TUNAI (COD)')">💵 Tunai (COD)</button>
+              <button type="button" class="badge-pay flex-1" id="payMethodTransfer" onclick="pilihMetodeBayar('TRANSFER / QRIS')">📱 Transfer/QRIS</button>
+            </div>
+          </div>
+
+          <button class="btn-y w-full mt-3 py-3" onclick="buatBillJastip()">🚀 BUAT BILL JASTIP (STRUK FINAL)</button>
+        </div>
+      </div>
+
+      <!-- SUB-HALAMAN: OJEK -->
+      <div id="driver-page-ojek" class="hidden">
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <h2>🏍️ OJEK PANGGILAN</h2>
+            <button class="btn-sm btn-back-context" onclick="handleTombolKembaliForm('ojek')">➔ KEMBALI</button>
+          </div>
+          <div class="field mb-3"><label>JARAK KM</label><input id="oJarak" type="text" inputmode="decimal" value="6" oninput="saveOjekState()"></div>
+          <div class="flex gap-2 mb-3">
+            <button class="btn-sm flex-1 py-2 btn-purple" style="border-color:white;" onclick="openTambahJasaModal('ojek')">💼 + TAMBAH JASA LAIN</button>
+          </div>
+          <div id="ojekExtraServices" class="flex-col flex gap-2 mb-3"></div>
+          <button class="btn-y w-full py-3" onclick="buatBillOjek()">🚀 BUAT BILL OJEK PANGGILAN</button>
+        </div>
+      </div>
+
+      <!-- SUB-HALAMAN: AMBIL BARANG -->
+      <div id="driver-page-ambil" class="hidden">
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <h2>📦 AMBIL PESANAN (SUDAH DIBAYAR)</h2>
+            <button class="btn-sm btn-back-context" onclick="handleTombolKembaliForm('ambil')">➔ KEMBALI</button>
+          </div>
+          <div id="ambilLokasi"></div>
+          <div class="flex gap-2 items-center my-3">
+            <button class="btn-sm flex-1 py-2" onclick="addAmbilLokasi()">+ TAMBAH LOKASI</button>
+            <button class="btn-sm flex-1 py-2 btn-purple" style="border-color:white;" onclick="openTambahJasaModal('ambil')">💼 + TAMBAH JASA LAIN</button>
+          </div>
+          <div id="ambilExtraServices" class="flex-col flex gap-2 mb-3"></div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="field"><label>JARAK KM</label><input id="aJarak" type="text" inputmode="decimal" value="3" oninput="saveAmbilState()"></div>
+            <div class="field"><label>PARKIR RP</label><input id="aParkir" type="text" inputmode="numeric" value="0" oninput="saveAmbilState()"></div>
+          </div>
+          <button class="btn-y w-full mt-3 py-3" onclick="buatBillAmbil()">🚀 BUAT BILL AMBIL</button>
+        </div>
+      </div>
+
+      <!-- SUB-HALAMAN: CUSTOM -->
+      <div id="driver-page-custom" class="hidden">
+        <div class="card">
+          <div class="flex justify-between items-center mb-2">
+            <h2>⭐ ORDERAN CUSTOM / KHUSUS</h2>
+            <button class="btn-sm btn-back-context" onclick="handleTombolKembaliForm('custom')">➔ KEMBALI</button>
+          </div>
+          <div class="field mb-2"><label>DESKRIPSI TUGAS / ORDERAN</label><textarea id="cDeskripsi" rows="2" placeholder="Contoh: Temenin di RS, jemput emas, gedor kost..." oninput="saveCustomState()"></textarea></div>
+          <div class="flex gap-2 mb-3">
+            <button class="btn-sm flex-1 py-2 btn-purple" style="border-color:white;" onclick="openTambahJasaModal('custom')">💼 + TAMBAH JASA LAIN</button>
+          </div>
+          <div id="customExtraServices" class="flex-col flex gap-2 mb-3"></div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="field"><label>JARAK KM</label><input id="cJarak" type="text" inputmode="decimal" value="5" oninput="saveCustomState()"></div>
+            <div class="field"><label>FEE KESEPAKATAN RP</label><input id="cSepakat" type="text" inputmode="numeric" value="15000" oninput="saveCustomState()"></div>
+            <div class="field"><label>PARKIR RP</label><input id="cParkir" type="text" inputmode="numeric" value="0" oninput="saveCustomState()"></div>
+            <div class="field"><label>TUNGGU MENIT</label><input id="cTunggu" type="text" inputmode="numeric" value="0" oninput="saveCustomState()"></div>
+          </div>
+          <button class="btn-y w-full mt-3 py-3" onclick="buatBillCustom()">🚀 BUAT BILL CUSTOM</button>
+        </div>
+      </div>
+
+      <!-- SUB-HALAMAN: PENILAIAN -->
+      <div id="driver-page-rating-history" class="hidden">
+        <div class="card">
+          <div class="flex justify-between items-center mb-3">
+            <h2>⭐ RIWAYAT PENILAIAN PELANGGAN</h2>
+            <button class="btn-sm" onclick="openPageDriver('home')">➔ KEMBALI</button>
+          </div>
+          <div class="text-center p-3 mb-3" style="background:rgba(0,0,0,0.4); border-radius:12px; border:1px solid #facc15;">
+            <div class="font-black text-yellow-300" style="font-size:28px;">4.9 / 5.0</div>
+            <div class="text-yellow-400 text-sm">★★★★★</div>
+            <div class="text-gray-200 mt-1" style="font-size:10px;">Total 128 Ulasan Terverifikasi</div>
+          </div>
+          <div class="flex-col flex gap-2 text-xs" id="ratingList">
+            <div class="p-2" style="background:rgba(255,255,255,0.1); border-radius:8px; border:1px solid rgba(250,204,21,0.4);">
+              <div class="flex justify-between text-yellow-300 font-bold">
+                <span>Budi Pratama</span>
+                <span>★★★★★</span>
+              </div>
+              <p class="text-gray-200 mt-1" style="font-size:11px;">"Driver sangat cepat, barang jastip rapi dan aman!"</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </section>
+
+</div>
+
+<!-- MODAL PREVIEW INTIKAN CHAT PELANGGAN (TANPA POP-UP SOP) -->
+<div class="custom-modal" id="modalPreviewChat">
+  <div class="modal-inner p-0" style="overflow:hidden; border:2px solid #25d366;">
+    <div class="p-3" style="background:#075e54; color:#ffffff; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div class="font-black" style="font-size:13px;" id="pvCustName">Pelanggan</div>
+        <div style="font-size:10px; color:#dcf8c6;" id="pvCustService">Layanan</div>
+      </div>
+      <button onclick="tutupPreviewChat()" style="background:none; border:none; color:#ffffff; font-size:18px; font-weight:bold; cursor:pointer;">✕</button>
+    </div>
+    
+    <div class="p-3" id="pvMessageBody" style="background:#efeae2; max-height:300px; overflow-y:auto; font-size:12px;"></div>
+
+    <div class="p-3 bg-white flex gap-2" style="border-top:1px solid #e5e7eb;">
+      <button class="btn-y flex-1" style="background:#25d366; color:#ffffff; font-size:12px;" onclick="eksekusiAmbilDariPreview()">
+        ✅ AMBIL PESANAN INI
+      </button>
+      <button class="btn-sm" style="background:#64748b; color:#ffffff; border:none;" onclick="tutupPreviewChat()">
+        Tutup
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= POP-UP PERINGATAN SOP AMBIL PESANAN ================= -->
+<div class="custom-modal" id="modalSopAmbilPesanan">
+  <div class="modal-inner p-0" style="overflow:hidden; border:2px solid #e53935; max-width:420px; display:flex; flex-direction:column; max-height:92vh;">
+    <div class="p-2.5 flex items-center justify-between" style="background:#b71c1c; color:#ffffff;">
+      <div class="font-black" style="font-size:12px;">⚠️ SOP PENTING SAAT AMBIL ORDERAN</div>
+      <button onclick="tutupModalSopAmbilPesanan()" style="background:none; border:none; color:#ffffff; font-size:18px; font-weight:bold; cursor:pointer;">✕</button>
+    </div>
+
+    <div style="flex:1; overflow-y:auto; background:#181818; padding:8px; display:flex; justify-content:center;">
+      <img src="https://i.postimg.cc/SRJCLPX0/1794318876969.jpg" alt="SOP Ambil Pesanan" style="max-width:100%; height:auto; border-radius:6px; display:block;" onclick="bukaFullImage(this.src)">
+    </div>
+
+    <div class="p-3 bg-white" style="border-top:1.5px solid #e5e7eb;">
+      <button type="button" class="cta-button" style="background:linear-gradient(90deg, #059669 0%, #10b981 100%); padding:12px 14px; font-size:12px;" onclick="konfirmasiSopDanLanjutAmbil()">
+        ✅ OKE, SAYA MENGERTI (LANJUT AMBIL ORDER)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= POP-UP GAMBAR FULLSCREEN (LIGHTBOX DENGAN TOMBOL SILANG) ================= -->
+<div id="modalFullImageView" class="custom-modal" onclick="tutupFullImage(event)">
+  <div style="position:relative; max-width:95%; max-height:90vh; display:flex; flex-direction:column; align-items:center;">
+    <button type="button" onclick="tutupFullImageDirect()" style="position:absolute; top:-40px; right:0; background:rgba(0,0,0,0.7); color:#ffffff; border:2px solid #ffffff; border-radius:50%; width:36px; height:36px; font-size:18px; font-weight:900; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:1000;" aria-label="Tutup Pratinjau">
+      ✕
+    </button>
+    <img id="fullImageTarget" src="" alt="Pratinjau Layar Penuh" style="max-width:100%; max-height:85vh; object-fit:contain; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,0.85);">
+  </div>
+</div>
+
+<!-- MODAL BILL (STRUK GAMBAR) -->
+<div class="billPage" id="billPage">
+  <div class="billTop">
+    <button class="hamburger border-white text-white" onclick="closeBill()">←</button>
+    <div class="font-black text-yellow-300" style="font-size:12px;" id="billTitle">STRUK RESMI NEXT LEVEL</div>
+  </div>
+  
+  <div class="billContent">
+    <div id="billTextFull" class="w-full flex justify-center"></div>
+  </div>
+
+  <div class="billActions" id="billActionsBar">
+    <button id="btnDownloadAndSendWA" class="btn-y flex-1 font-black" style="background:#10b981; color:#000; font-size:11px; padding:12px 6px;" onclick="downloadBillDanLaporWA()">
+      🖼️ SIMPAN & KIRIM KE ADMIN (WA)
+    </button>
+    <button class="btn-y flex-1 text-white" style="background:#991b1b; font-size:11px; padding:12px 6px;" onclick="closeBill()">
+      ➔ KEMBALI
+    </button>
+  </div>
+</div>
+
+<!-- MODAL TAMBAH JASA -->
+<div class="custom-modal" id="modalTambahJasa">
+  <div class="modal-inner">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="font-black uppercase" style="font-size:12px; color:#991b1b;">💼 Tambah Layanan Ekstra (1 Bill)</h3>
+      <button onclick="closeTambahJasaModal()" class="font-bold" style="color:#9ca3af;">✕</button>
+    </div>
+    <div class="grid grid-cols-2 gap-2 font-bold" style="font-size:12px;">
+      <button onclick="pilihJasaEkstra('ambil')" class="p-3 text-left" style="background:#fffbeb; border:2px solid #facc15; border-radius:12px;">📦 Ambil Pesanan</button>
+      <button onclick="pilihJasaEkstra('ojek')" class="p-3 text-left" style="background:#fffbeb; border:2px solid #facc15; border-radius:12px;">🏍️ Ojek Panggilan</button>
+      <button onclick="pilihJasaEkstra('custom')" class="p-3 text-left" style="background:#fffbeb; border:2px solid #facc15; border-radius:12px;">⭐ Custom Khusus</button>
+      <button onclick="pilihJasaEkstra('jastip')" class="p-3 text-left" style="background:#fffbeb; border:2px solid #facc15; border-radius:12px;">🛍️ Jastip Tambahan</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VERIFIKASI TOKEN RESET T (SISI DRIVER) -->
+<div class="custom-modal" id="modalResetT">
+  <div class="modal-inner">
+    <div class="flex justify-between items-center mb-2">
+      <h3 class="font-black uppercase" style="font-size:12px; color:#1e3a8a;">🔄 VERIFIKASI PELUNASAN SETORAN</h3>
+      <button onclick="tutupModalResetT()" class="font-bold" style="color:#9ca3af;">✕</button>
+    </div>
+    <p style="font-size:10.5px; color:#475569; margin-bottom:10px; line-height:1.4;">
+      Transfer setoran Anda ke rekening Owner, kirim bukti ke WA, lalu masukkan <b>4-Digit Token Otorisasi</b> yang diberikan Owner di bawah ini.
+    </p>
+
+    <div class="p-2 mb-2" style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px;">
+      <div class="flex justify-between" style="font-size:11px;">
+        <span style="color:#4b5563;">Posisi LOT Driver:</span>
+        <b style="color:#111;" id="lblResetCurrentLot">-</b>
+      </div>
+      <div class="flex justify-between mt-1" style="font-size:11px;">
+        <span style="color:#4b5563;">Total Setoran (T):</span>
+        <b style="color:#dc2626;" id="lblResetCurrentT">-</b>
+      </div>
+    </div>
+
+    <div class="field mb-3" style="background:#f8fafc; border-color:#2563eb; padding:8px 10px;">
+      <label style="color:#1e3a8a; font-size:9.5px;">MASUKKAN 4-DIGIT TOKEN OWNER *</label>
+      <input type="text" inputmode="numeric" maxlength="4" id="inputTokenDriver" placeholder="••••" style="font-size:22px; letter-spacing:8px; text-align:center; color:#0f172a; font-weight:900;">
+    </div>
+
+    <div id="resetErrorMsg" class="font-bold text-center mb-2 hidden" style="font-size:11px; color:#dc2626;"></div>
+
+    <button class="cta-button" style="background:#059669; padding:12px;" onclick="verifikasiTokenDriver()">
+      🔓 BUKA KUNCI & RESET T KE RP 0
+    </button>
+  </div>
+</div>
+
+<!-- MODAL LOGIN OWNER (MASTER PIN) -->
+<div class="custom-modal" id="modalLoginOwner">
+  <div class="modal-inner text-center">
+    <div class="flex justify-between items-center mb-2">
+      <h3 class="font-black" style="font-size:13px; color:#1e3a8a;">🔐 AKSES PANEL OWNER</h3>
+      <button onclick="tutupModalLoginOwner()" class="font-bold" style="color:#9ca3af;">✕</button>
+    </div>
+    <p style="font-size:11px; color:#64748b; margin-bottom:12px;">Hanya pemilik / owner yang memiliki hak akses.</p>
+    
+    <div class="field mb-3" style="background:#f8fafc; border-color:#93c5fd; padding:8px 10px;">
+      <label style="color:#1e3a8a;">MASTER PIN OWNER</label>
+      <input type="password" id="inputMasterPin" placeholder="Ketik Master PIN..." style="font-size:18px; text-align:center; color:#0f172a; font-weight:900;">
+    </div>
+
+    <button class="cta-button" style="background:#2563eb;" onclick="bukaGeneratorOwner()">MASUK PANEL GENERATOR ➔</button>
+  </div>
+</div>
+
+<!-- MODAL PANEL GENERATOR TOKEN (KHUSUS OWNER) -->
+<div class="custom-modal" id="modalGeneratorOwner">
+  <div class="modal-inner">
+    <div class="flex justify-between items-center mb-2">
+      <h3 class="font-black uppercase" style="font-size:12px; color:#1e3a8a;">⚙️ GENERATOR TOKEN OTP OWNER</h3>
+      <button onclick="tutupModalGeneratorOwner()" class="font-bold" style="color:#9ca3af;">✕</button>
+    </div>
+    <p style="font-size:10px; color:#475569; margin-bottom:10px;">
+      Ketik nomor urut LOT driver yang barusan transfer, klik <b>Buat Token</b>, lalu tekan <b>Salin Token</b> untuk ditempel ke WhatsApp driver.
+    </p>
+
+    <div class="field mb-2" style="background:#f8fafc; border-color:#93c5fd;">
+      <label style="color:#1e3a8a;">NOMOR URUT LOT DRIVER (ANGKA) *</label>
+      <input type="text" inputmode="numeric" id="inputGenLot" placeholder="Contoh: 18" style="font-size:15px; color:#0f172a; font-weight:900;">
+    </div>
+
+    <button class="cta-button mb-3" style="background:#2563eb; padding:10px;" onclick="eksekusiBuatToken()">
+      ⚙️ BUAT KODE TOKEN
+    </button>
+
+    <div id="hasilTokenBox" class="hidden p-3 text-center" style="background:#f0fdf4; border:2px dashed #16a34a; border-radius:12px;">
+      <div style="font-size:10px; color:#15803d; font-weight:700;">TOKEN OTORISASI (SEKALI PAKAI):</div>
+      <div id="displayOtpResult" class="font-black my-1" style="font-size:32px; letter-spacing:6px; color:#15803d; font-family:monospace;">0000</div>
+      
+      <button class="cta-button mt-2" style="background:#16a34a; padding:10px;" onclick="salinKodeTokenKeClipboard()">
+        📋 SALIN KODE TOKEN
+      </button>
+      <div id="copySuccessAlert" class="font-bold mt-1 text-green-700 hidden" style="font-size:10.5px;">✅ Kode tersalin! Tinggal buka WA driver lalu tempel (paste).</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= KONFIGURASI ADMIN & NAVIGASI =================
+const ADMIN_WHATSAPP_NUMBER = "6288971320461";
+const MASTER_OWNER_PIN = "7788";
+
+// 3 LINK GAMBAR SKEMA SOP RESMI
+const LINK_SKEMA_FEE_PRODUK = "https://i.postimg.cc/sDYMhyx2/IMG-20261110-WA0029.jpg";
+const LINK_SKEMA_UANG_TUNGGU = "https://i.postimg.cc/hvFGX3q0/IMG-20261106-WA0020.jpg";
+const LINK_SKEMA_LUAR_AREA = "https://i.postimg.cc/MTtmmRdg/1794318348026.jpg";
+
+function hitungTokenRahasia(lotNum, tglStr) {
+  let lot = parseInt(lotNum) || 0;
+  let numTgl = parseInt(String(tglStr).replace(/\D/g, '')) || 81126;
+  let seed = (lot * 8191) + 104729;
+  seed = (seed ^ (numTgl * 3571)) + 12345;
+  let code = Math.abs((seed * 49297) + 99991) % 10000;
+  return String(code).padStart(4, '0');
+}
+
+function switchMainScreen(screenId, save = true) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(screenId);
+  if (target) {
+    target.classList.add('active');
+    window.scrollTo(0, 0);
+  }
+  if (save && screenId !== 'screen-login') {
+    localStorage.setItem('nl_active_screen', screenId);
+  }
+}
+
+function goToRegister() {
+  const now = new Date();
+  const idPel = `${String(now.getFullYear()).slice(-2)}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}.01`;
+  document.getElementById('lbl-id-pel').innerText = idPel;
+  switchMainScreen('screen-register');
+}
+
+function goToLoginScreen() {
+  const savedPass = localStorage.getItem('nl_driver_password');
+  if (!savedPass) {
+    alert("⚠️ Anda belum terdaftar atau belum membuat password. Silakan daftar terlebih dahulu!");
+    goToRegister();
+    return;
+  }
+  switchMainScreen('screen-login', false);
+}
+
+let isVideoVerified = false; 
+let isKtpVerified = false;
+
+function handleNativeVideoWajah(input) { 
+  if (input.files && input.files[0]) { 
+    isVideoVerified = true; 
+    document.getElementById('videoSuccessBox').classList.remove('hidden'); 
+    alert("✅ Rekaman video wajah kedip diterima!"); 
+  } 
+}
+
+function handleNativeKtp(input) { 
+  if (input.files && input.files[0]) { 
+    isKtpVerified = true; 
+    document.getElementById('ktpSuccessBox').classList.remove('hidden'); 
+    alert("✅ Foto KTP asli diterima!"); 
+  } 
+}
+
+function finishRegister() {
+  if (!isVideoVerified) { alert("⚠️ Mohon rekam video wajah (kedip mata) Anda terlebih dahulu!"); return; }
+  if (!isKtpVerified) { alert("⚠️ Mohon ambil foto KTP asli Anda terlebih dahulu!"); return; }
+  
+  const pass = document.getElementById('regPassword').value.trim();
+  const passConfirm = document.getElementById('regPasswordConfirm').value.trim();
+
+  if (!pass) {
+    alert("⚠️ Silakan buat Password keamanan Anda terlebih dahulu!");
+    return;
+  }
+  if (pass !== passConfirm) {
+    alert("⚠️ Konfirmasi password tidak cocok!");
+    return;
+  }
+
+  localStorage.setItem('nl_driver_password', pass);
+  localStorage.setItem('nl_is_registered', 'true');
+  sessionStorage.setItem('nl_session_unlocked', 'true');
+
+  alert("🎉 Pendaftaran & Password Berhasil Dibuat!"); 
+  switchMainScreen('screen-driver');
+  openPageDriver('home');
+}
+
+function verifyLoginPassword() {
+  const inputPass = document.getElementById('loginPasswordInput').value.trim();
+  const savedPass = localStorage.getItem('nl_driver_password');
+
+  if (!inputPass) {
+    alert("⚠️ Silakan masukkan password Anda!");
+    return;
+  }
+
+  if (inputPass === savedPass) {
+    sessionStorage.setItem('nl_session_unlocked', 'true');
+    document.getElementById('loginPasswordInput').value = '';
+    const savedDriverPage = localStorage.getItem('nl_active_driver_page') || 'home';
+    switchMainScreen('screen-driver');
+    openPageDriver(savedDriverPage, false);
+  } else {
+    alert("❌ Password salah! Silakan coba lagi.");
+  }
+}
+
+function kunciAplikasi() {
+  document.getElementById('drawer').classList.remove('open');
+  sessionStorage.removeItem('nl_session_unlocked');
+  switchMainScreen('screen-login', false);
+}
+
+// ================= RUMUS & DATA OPERASIONAL DRIVER =================
+let driverData = { driver: "Mitra Driver", motor: "Motor Driver", tgl: "", lot: 0, k: 0, a: 0, f: 0, t: 0, bank: "", rek: "", an: "", saved: false };
+let jastipId = 0, ambilId = 0;
+let accumulatedDriverIncome = 0;
+let activeTargetService = '';
+let activeBillServiceSource = '';
+let currentPaymentMethod = 'TUNAI (COD)';
+
+let failedTokenAttempts = 0;
+let tokenLockoutUntil = 0;
+
+let lastGeneratedBillMeta = null;
+let orderIncomeBook = [];
+let currentKeuanganTab = 'today';
+let lastReportSentDate = localStorage.getItem('nl_last_report_date') || '';
+
+let navigatedFromChatRoom = false;
+
+// DATA CHAT CUSTOMER INBOX
+let activeInboxTab = 'antrean';
+let activeChatOrder = null;
+let previewOrderId = null;
+let pendingTakeOrderId = null;
+
+let chatOrderDatabase = [
+  {
+    id: "ord-101",
+    customerName: "Rizal (Pluto)",
+    phone: "08123456789",
+    service: "Jastip / Belanja",
+    serviceIcon: "🛍️",
+    status: "antrean",
+    lastMessage: "Warung Useng: Beli bakso kangkung, antar ke Pluto ya",
+    time: "16:30",
+    history: [
+      { sender: 'bot', text: 'Hallo saya admin nextlevel 🙏😊<br>Klik salah satu tombol jasa di bawah ini ya.' },
+      { sender: 'customer', text: '🛍️ Jastip / Belanja' },
+      { sender: 'bot', text: 'Bentarr yaa Kak, kami infokan ke driver yaa untuk Jastip / Belanja 🛍️🍜' },
+      { sender: 'customer', text: 'Warung Useng\nBeli bakso. Kangkung\nKerumah saya di Pluto' }
+    ]
+  }
+];
+
+// ================= SISTEM ALARM DARURAT ORDERAN (POIN 1 - 4) =================
+let isAlarmRunning = false;
+let alarmLoopTimer = null;
+let alarmMaxTimeoutTimer = null;
+
+// OTOMATIS BERHENTI (MATI TOTAL) SAAT KLIK AMBIL ATAU INTIP
+function hentikanAlarmOrderan() {
+  if (!isAlarmRunning) return;
+  isAlarmRunning = false;
+  if (alarmLoopTimer) { clearTimeout(alarmLoopTimer); alarmLoopTimer = null; }
+  if (alarmMaxTimeoutTimer) { clearTimeout(alarmMaxTimeoutTimer); alarmMaxTimeoutTimer = null; }
+  
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  if ('vibrate' in navigator) {
+    navigator.vibrate(0);
+  }
+}
+
+// MEMULAI ALARM BERULANG (DURASI MAKSIMAL 5 MENIT PENGAMAN BATERAI)
+function mulaiAlarmOrderan() {
+  if (isAlarmRunning) return;
+  const listAntrean = chatOrderDatabase.filter(c => c.status === 'antrean');
+  if (listAntrean.length === 0) return;
+
+  isAlarmRunning = true;
+
+  // Batas pengaman maksimal 5 menit (300.000 ms) jika driver tidak memegang HP
+  if (alarmMaxTimeoutTimer) clearTimeout(alarmMaxTimeoutTimer);
+  alarmMaxTimeoutTimer = setTimeout(() => {
+    hentikanAlarmOrderan();
+  }, 5 * 60 * 1000);
+
+  putarSiklusAlarm();
+}
+
+// SIKLUS ALARM: SIRINE MELENGKING + GETAR + UCAPAN + JEDA 1.5 DETIK
+function putarSiklusAlarm() {
+  if (!isAlarmRunning) return;
+
+  // 1. Getaran Ponsel Keras (Vibration API)
+  if ('vibrate' in navigator) {
+    navigator.vibrate([400, 150, 400, 150, 600]);
+  }
+
+  // 2. Nada Sirine Melengking Tinggi (1.200 Hz - 1.800 Hz)
+  let durasiTotalSirineMs = 500;
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      const ctx = new AudioContext();
+      const nadaMelengking = [1200, 1700, 1300, 1800, 1500, 1800];
+      const durasiPerNada = 0.08;
+
+      nadaMelengking.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth'; // Gelombang tajam untuk frekuensi menusuk telinga
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + (idx * durasiPerNada));
+        gain.gain.setValueAtTime(0.35, ctx.currentTime + (idx * durasiPerNada));
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (idx * durasiPerNada) + durasiPerNada);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + (idx * durasiPerNada));
+        osc.stop(ctx.currentTime + (idx * durasiPerNada) + durasiPerNada);
+      });
+      durasiTotalSirineMs = nadaMelengking.length * durasiPerNada * 1000;
+    }
+  } catch(e) {}
+
+  // 3. Suara Tegas: "Orderan Next Level!"
+  setTimeout(() => {
+    if (!isAlarmRunning) return;
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const pesan = new SpeechSynthesisUtterance("Orderan Next Level!");
+      pesan.lang = 'id-ID';
+      pesan.rate = 1.2;
+      pesan.pitch = 1.1;
+
+      pesan.onend = function() {
+        if (!isAlarmRunning) return;
+        // Jeda hening hanya 1.5 detik lalu berdering kembali
+        alarmLoopTimer = setTimeout(() => {
+          putarSiklusAlarm();
+        }, 1500);
+      };
+
+      pesan.onerror = function() {
+        if (!isAlarmRunning) return;
+        alarmLoopTimer = setTimeout(() => {
+          putarSiklusAlarm();
+        }, 1500);
+      };
+
+      window.speechSynthesis.speak(pesan);
+    } else {
+      alarmLoopTimer = setTimeout(() => {
+        putarSiklusAlarm();
+      }, 1500);
+    }
+  }, durasiTotalSirineMs + 60);
+}
+
+function getTodayDDMMYY() { 
+  let d = new Date(); 
+  return String(d.getDate()).padStart(2, '0') + String(d.getMonth() + 1).padStart(2, '0') + String(d.getFullYear()).slice(-2); 
+}
+function getTodayString() { 
+  let d = new Date(); 
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; 
+}
+function getYesterdayString() { 
+  let d = new Date(); 
+  d.setDate(d.getDate() - 1); 
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; 
+}
+function getOngkir(km) { 
+  km = parseFloat(km) || 0; 
+  if (km <= 3.3) return 10000; 
+  return Math.round(km * 3000); 
+}
+function getTunggu(m) { 
+  m = parseInt(m) || 0; 
+  if (m < 30) return 0; 
+  return Math.floor((m * 5000 / 30) / 100) * 100; 
+}
+function getGrupHarga(h) { 
+  h = parseInt(h) || 0; 
+  if (h < 3000) return 'A'; 
+  if (h <= 4999) return 'B'; 
+  if (h <= 9999) return 'C'; 
+  if (h <= 49999) return 'D'; 
+  if (h <= 99999) return 'NEW1'; 
+  return 'NEW2'; 
+}
+
+function hitungFeeGrup(grup, totalHarga, totalQty) {
+  if (grup === 'A') { if (totalHarga < 5000) return totalQty * 500; if (totalHarga >= 5000 && totalHarga <= 9999) return 2000; return totalQty * 200; }
+  if (grup === 'B') { if (totalQty === 1 && totalHarga < 5000) return 1000; if (totalHarga >= 5000 && totalHarga <= 9999) return 2000; if (totalHarga >= 10000) return totalQty * 500; return totalQty * 1000; }
+  if (grup === 'C') { if (totalQty === 1) return 2000; return totalQty * 1000; }
+  if (grup === 'D') { if (totalQty <= 10) return totalQty * 2000; return totalQty * 1000; }
+  if (grup === 'NEW1') return totalQty * 4000; return totalQty * 8000;
+}
+
+function getFeeTierNew2(h, q) { 
+  h = parseInt(h) || 0; q = parseInt(q) || 1; 
+  let per = 8000; 
+  if (h >= 200000 && h < 300000) per = 16000; 
+  else if (h >= 300000) per = Math.floor(h / 100000) * 8000; 
+  return per * q; 
+}
+
+function hitungKonversiF(totalKomponenFee) {
+  totalKomponenFee = parseInt(totalKomponenFee) || 0;
+  if (totalKomponenFee <= 0) return 0;
+  if (totalKomponenFee >= 1 && totalKomponenFee <= 4) return 200;
+  if (totalKomponenFee >= 5 && totalKomponenFee <= 9) return 500;
+  if (totalKomponenFee >= 10 && totalKomponenFee <= 14) return 700;
+  if (totalKomponenFee >= 15 && totalKomponenFee <= 19) return 1200;
+  let sisa = Math.floor((totalKomponenFee - 15) / 5);
+  return 1200 + (sisa * 300);
+}
+
+function formatFeeKVal(val) {
+  val = parseInt(val) || 0;
+  if (val <= 0) return '0K';
+  if (val >= 1000) {
+    let k = val / 1000;
+    return (k % 1 === 0 ? k : k.toFixed(1)) + 'K';
+  }
+  return val.toString();
+}
+
+function toggleDrawer() { document.getElementById('drawer').classList.toggle('open'); }
+
+const BILL_LOCK_PAGES = ['jastip', 'ojek', 'ambil', 'custom'];
+const SETORAN_LOCK_LIMIT = 50000;
+
+function isSetoranLocked() {
+  return (driverData && (driverData.t || 0) >= SETORAN_LOCK_LIMIT);
+}
+
+function alertSetoranLocked() {
+  const t = (driverData.t || 0).toLocaleString('id-ID');
+  alert(`🔒 MENU TERKUNCI!\n\nTotal setoran wajib (T) Anda sudah Rp ${t} (batas Rp 50.000).\n\nWAJIB SETOR KAS: Transfer setoran ke rekening Owner, kirim bukti ke WA, lalu masukkan Token OTP di menu Keuangan Driver untuk membuka kembali menu Jastip, Ojek, Ambil Pesanan & Custom.`);
+}
+
+function updateContextBackButtons() {
+  document.querySelectorAll('.btn-back-context').forEach(b => {
+    if (navigatedFromChatRoom) {
+      b.innerHTML = '💬 KEMBALI KE CHAT';
+      b.style.background = '#25d366';
+      b.style.color = '#ffffff';
+    } else {
+      b.innerHTML = '➔ KEMBALI';
+      b.style.background = '#facc15';
+      b.style.color = '#7a0f0f';
+    }
+  });
+}
+
+function handleTombolKembaliForm(currentForm) {
+  if (navigatedFromChatRoom) {
+    navigatedFromChatRoom = false;
+    openPageDriver('chat-room');
+  } else {
+    openPageDriver('home');
+  }
+}
+
+function openPageDriver(pageId, save = true) {
+  if (BILL_LOCK_PAGES.includes(pageId) && isSetoranLocked()) {
+    if (save) alertSetoranLocked();
+    pageId = 'home';
+  }
+  document.getElementById('drawer').classList.remove('open');
+  const pages = ['home', 'ambil-order', 'jastip', 'ojek', 'ambil', 'custom', 'chat-inbox', 'chat-room', 'rating-history', 'keuangan-detail'];
+  pages.forEach(p => { const el = document.getElementById('driver-page-' + p); if (el) el.classList.add('hidden'); });
+  
+  const target = document.getElementById('driver-page-' + pageId);
+  if (target) target.classList.remove('hidden');
+
+  if (save) {
+    localStorage.setItem('nl_active_driver_page', pageId);
+  }
+
+  updateContextBackButtons();
+
+  if (pageId === 'jastip') {
+    if (!restoreJastipState()) {
+      if (jastipId === 0) addJastipLokasi();
+    }
+  }
+  if (pageId === 'ambil') {
+    if (!restoreAmbilState()) {
+      if (ambilId === 0) addAmbilLokasi();
+    }
+  }
+  if (pageId === 'ojek') {
+    restoreOjekState();
+  }
+  if (pageId === 'custom') {
+    restoreCustomState();
+  }
+
+  if (pageId === 'chat-inbox') renderChatInbox();
+  if (pageId === 'ambil-order') checkLockRule();
+  if (pageId === 'keuangan-detail') renderBukuKas();
+  window.scrollTo(0, 0);
+}
+
+// FORM PENDAFTARAN MANUAL
+function onInputLotAwal() {
+  const lot = parseInt(document.getElementById('fLot').value || 0);
+  const k = lot * 2000;
+  const a = lot * 1000;
+  document.getElementById('fK').value = k;
+  document.getElementById('fA').value = a;
+  recalcLotFormManual();
+}
+
+function recalcLotFormManual() {
+  const k = parseInt(document.getElementById('fK').value || 0);
+  const a = parseInt(document.getElementById('fA').value || 0);
+  const f = parseInt(document.getElementById('fF').value || 0);
+  document.getElementById('fT').value = (k + a + f);
+  saveDriverFromForm();
+}
+
+function saveDriverFromForm() {
+  driverData.driver = document.getElementById('fDriver').value.trim();
+  driverData.motor = document.getElementById('fMotor').value.trim();
+  driverData.bank = document.getElementById('fBank').value.trim();
+  driverData.rek = document.getElementById('fRek').value.trim();
+  driverData.an = document.getElementById('fAn').value.trim();
+  driverData.lot = parseInt(document.getElementById('fLot').value || 0);
+  driverData.k = parseInt(document.getElementById('fK').value || 0);
+  driverData.a = parseInt(document.getElementById('fA').value || 0);
+  driverData.f = parseInt(document.getElementById('fF').value || 0);
+  driverData.t = parseInt(document.getElementById('fT').value || (driverData.k + driverData.a + driverData.f));
+  driverData.tgl = document.getElementById('fTgl').value || getTodayDDMMYY();
+  localStorage.setItem('nl_driver_data', JSON.stringify(driverData));
+  localStorage.setItem('nl_last_activity_time', Date.now().toString());
+}
+
+function syncDriverToFormAndStorage() {
+  if (document.getElementById('fLot')) document.getElementById('fLot').value = driverData.lot;
+  if (document.getElementById('fK')) document.getElementById('fK').value = driverData.k;
+  if (document.getElementById('fA')) document.getElementById('fA').value = driverData.a;
+  if (document.getElementById('fF')) document.getElementById('fF').value = driverData.f;
+  if (document.getElementById('fT')) document.getElementById('fT').value = driverData.t;
+  localStorage.setItem('nl_driver_data', JSON.stringify(driverData));
+  localStorage.setItem('nl_last_activity_time', Date.now().toString());
+}
+
+function simpanDriver() {
+  saveDriverFromForm();
+  if (!driverData.driver || !driverData.motor || !driverData.bank || !driverData.rek || !driverData.an) { 
+    alert("Lengkapi data formulir driver!"); 
+    return; 
+  }
+  driverData.saved = true;
+  localStorage.setItem('nl_driver_data', JSON.stringify(driverData));
+
+  document.getElementById('formCard').classList.add('hidden'); 
+  document.getElementById('haloBox').classList.remove('hidden'); 
+  document.getElementById('haloName').innerText = driverData.driver; 
+  updateFinancialDashboard();
+  alert("✅ Data driver & LOT awal berhasil disimpan!");
+}
+
+function updateFinancialDashboard() {
+  const lotText = `NL.${driverData.tgl}.${driverData.lot}.J-K.${driverData.k}-A.${driverData.a}-F.${driverData.f}-T.${driverData.t}`;
+  document.getElementById('haloLot').innerText = lotText;
+  document.getElementById('dashTotalBayarT').innerText = 'Rp ' + (driverData.t || 0).toLocaleString('id-ID');
+  document.getElementById('dashPendapatanDriver').innerText = 'Rp ' + accumulatedDriverIncome.toLocaleString('id-ID');
+  checkLockRule();
+}
+
+function checkLockRule() {
+  const isHighT = (driverData.t >= 50000);
+  const yesterdayStr = getYesterdayString();
+  const hasYesterdayOrders = orderIncomeBook.some(item => item.tanggal === yesterdayStr);
+  const isLockedByUnreported = hasYesterdayOrders && (lastReportSentDate !== yesterdayStr && lastReportSentDate !== getTodayString());
+  
+  const warn = document.getElementById('lockWarningBox'); 
+  const bannerUnreported = document.getElementById('unreportedLockBanner'); 
+  const btns = document.querySelectorAll('.btnTakeOrder');
+
+  if (warn) { 
+    if (isHighT) { 
+      warn.classList.remove('hidden'); 
+      document.getElementById('lockWarningT').innerText = 'Rp ' + driverData.t.toLocaleString('id-ID'); 
+    } else { 
+      warn.classList.add('hidden'); 
+    } 
+  }
+  if (bannerUnreported) { 
+    if (isLockedByUnreported) { 
+      bannerUnreported.classList.remove('hidden'); 
+    } else { 
+      bannerUnreported.classList.add('hidden'); 
+    } 
+  }
+
+  const menuNotice = document.getElementById('menuSetorLockNotice');
+  if (menuNotice) {
+    menuNotice.classList.toggle('hidden', !isHighT);
+    if (isHighT) document.getElementById('menuSetorLockT').innerText = 'Rp ' + driverData.t.toLocaleString('id-ID');
+  }
+  document.querySelectorAll('.billLockMenu').forEach(m => {
+    m.innerText = isHighT ? '🔒 ' + m.dataset.label + ' (TERKUNCI)' : m.dataset.label;
+    m.style.opacity = isHighT ? '0.5' : '';
+    m.setAttribute('aria-disabled', isHighT ? 'true' : 'false');
+  });
+  if (isHighT) {
+    const activePage = localStorage.getItem('nl_active_driver_page');
+    const activeEl = activePage && document.getElementById('driver-page-' + activePage);
+    if (BILL_LOCK_PAGES.includes(activePage) && activeEl && !activeEl.classList.contains('hidden')) {
+      openPageDriver('home');
+    }
+  }
+
+  btns.forEach(b => {
+    if (isLockedByUnreported) { 
+      b.disabled = true; 
+      b.innerText = '🔒 TERKUNCI (BELUM LAPOR KEMARIN)'; 
+    } else { 
+      b.disabled = false; 
+      b.innerText = '✅ AMBIL PESANAN'; 
+    }
+  });
+}
+
+// ================= SISTEM CHAT WA & ANTREAN PESANAN DRIVER =================
+function switchTabInbox(tab) {
+  activeInboxTab = tab;
+  const btnAntrean = document.getElementById('tabChatAntrean');
+  const btnAktif = document.getElementById('tabChatAktif');
+  if (tab === 'antrean') {
+    btnAntrean.style.background = '#25d366';
+    btnAntrean.style.color = '#ffffff';
+    btnAktif.style.background = '#f0f2f5';
+    btnAktif.style.color = '#4b5563';
+  } else {
+    btnAktif.style.background = '#25d366';
+    btnAktif.style.color = '#ffffff';
+    btnAntrean.style.background = '#f0f2f5';
+    btnAntrean.style.color = '#4b5563';
+  }
+  renderChatInbox();
+}
+
+function renderChatInbox() {
+  const container = document.getElementById('inboxListContainer');
+  const listAntrean = chatOrderDatabase.filter(c => c.status === 'antrean');
+  const listAktif = chatOrderDatabase.filter(c => c.status === 'aktif');
+
+  document.getElementById('countInboxAntrean').innerText = listAntrean.length;
+  document.getElementById('countInboxAktif').innerText = listAktif.length;
+  document.getElementById('headerChatBadge').innerText = listAntrean.length;
+  document.getElementById('drawerChatBadge').innerText = listAntrean.length;
+
+  const currentList = (activeInboxTab === 'antrean') ? listAntrean : listAktif;
+
+  if (currentList.length === 0) {
+    container.innerHTML = `
+      <div class="text-center p-4 text-gray-700" style="font-size:12px; margin-top:30px;">
+        ${activeInboxTab === 'antrean' ? 'Tidak ada antrean pesanan baru saat ini.' : 'Belum ada pesanan aktif yang Anda ambil.'}
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = currentList.map(item => `
+    <div class="chat-inbox-item">
+      <div class="chat-avatar-round">${item.serviceIcon}</div>
+      <div style="flex:1; min-width:0;" onclick="${item.status === 'aktif' ? `bukaChatLangsung('${item.id}', false)` : `bukaPreviewChat('${item.id}')`}">
+        <div class="flex justify-between items-center">
+          <b style="font-size:13px; color:#111b21;">${item.customerName}</b>
+          <span style="font-size:10px; color:#667781;">${item.time}</span>
+        </div>
+        <div style="font-size:11px; color:#075e54; font-weight:700;">${item.service}</div>
+        <div style="font-size:11px; color:#667781; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+          ${item.lastMessage}
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:4px;">
+        ${item.status === 'antrean' ? `
+          <button class="btn-sm" style="background:#25d366; color:#fff; border:none; padding:4px 8px; font-weight:bold;" onclick="mintaKonfirmasiAmbilOrder('${item.id}')">Ambil</button>
+          <button class="btn-sm" style="background:#e2e8f0; color:#111; border:none; padding:4px 8px;" onclick="bukaPreviewChat('${item.id}')">👁️ Intip</button>
+        ` : `
+          <button class="btn-sm" style="background:#075e54; color:#fff; border:none; padding:6px 10px;" onclick="bukaChatLangsung('${item.id}', false)">Buka 💬</button>
+        `}
+      </div>
+    </div>
+  `).join('');
+}
+
+// PREVIEW INTIK: MURNI BACA CHAT & LANGSUNG MATIKAN ALARM
+function bukaPreviewChat(orderId) {
+  hentikanAlarmOrderan(); // MATIKAN ALARM SEKETIKA SAAT DRIVER KLIK INTIP
+
+  const ord = chatOrderDatabase.find(o => o.id === orderId);
+  if (!ord) return;
+  previewOrderId = orderId;
+  document.getElementById('pvCustName').innerText = `${ord.customerName} (${ord.phone})`;
+  document.getElementById('pvCustService').innerText = `Layanan: ${ord.service}`;
+
+  const bodyEl = document.getElementById('pvMessageBody');
+  bodyEl.innerHTML = ord.history.map(msg => `
+    <div class="${msg.sender === 'customer' ? 'chat-bubble-in' : 'chat-bubble-out'}" style="margin-bottom:6px;">
+      <div style="font-size:9px; color:#64748b; font-weight:bold;">${msg.sender === 'customer' ? ord.customerName : 'Sistem Bot'}</div>
+      <div>${msg.text.replace(/\n/g, '<br>')}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('modalPreviewChat').classList.add('open');
+}
+
+function tutupPreviewChat() {
+  document.getElementById('modalPreviewChat').classList.remove('open');
+  previewOrderId = null;
+}
+
+function eksekusiAmbilDariPreview() {
+  if (!previewOrderId) return;
+  const idTarget = previewOrderId;
+  tutupPreviewChat();
+  mintaKonfirmasiAmbilOrder(idTarget);
+}
+
+// POP-UP PERINGATAN SOP SAAT DRIVER KLIK AMBIL PESANAN & MATIKAN ALARM
+function mintaKonfirmasiAmbilOrder(orderId) {
+  hentikanAlarmOrderan(); // MATIKAN ALARM SEKETIKA SAAT DRIVER KLIK AMBIL
+  pendingTakeOrderId = orderId;
+  document.getElementById('modalSopAmbilPesanan').classList.add('open');
+}
+
+function tutupModalSopAmbilPesanan() {
+  document.getElementById('modalSopAmbilPesanan').classList.remove('open');
+  pendingTakeOrderId = null;
+}
+
+function konfirmasiSopDanLanjutAmbil() {
+  if (!pendingTakeOrderId) return;
+  const targetId = pendingTakeOrderId;
+  tutupModalSopAmbilPesanan();
+  prosesAmbilPesananResmi(targetId);
+}
+
+function prosesAmbilPesananResmi(orderId) {
+  const ord = chatOrderDatabase.find(o => o.id === orderId);
+  if (!ord) return;
+
+  ord.status = 'aktif';
+  
+  ord.history.push({
+    sender: 'driver',
+    text: `Kabar baik Kak! Pesanan Anda telah diambil oleh Driver ${driverData.driver} (${driverData.motor}). Driver sedang membaca detail pesanan Anda. 🙏🛵`
+  });
+
+  renderChatInbox();
+  bukaChatLangsung(orderId, true);
+}
+
+function bukaChatLangsung(orderId, isBaruDiambil = false) {
+  hentikanAlarmOrderan();
+  const ord = chatOrderDatabase.find(o => o.id === orderId);
+  if (!ord) return;
+  activeChatOrder = ord;
+  document.getElementById('roomTargetCustomer').innerText = ord.customerName;
+  document.getElementById('roomTargetSub').innerText = `Layanan: ${ord.service} (Sedang Berjalan)`;
+
+  const inputEl = document.getElementById('driverChatTextInput');
+  if (isBaruDiambil) {
+    const namaDriver = driverData.driver || "Mitra Driver";
+    inputEl.value = `Halo, saya ${namaDriver}, Driver Next Level yang akan meng-handle pesanan Anda.`;
+  } else {
+    inputEl.value = '';
+  }
+
+  renderRoomMessages();
+  openPageDriver('chat-room');
+}
+
+function bukaChatDariCust(name, service) {
+  hentikanAlarmOrderan();
+  let ord = chatOrderDatabase.find(c => c.customerName.includes(name));
+  if (!ord) {
+    ord = {
+      id: "ord-" + Date.now(),
+      customerName: name,
+      phone: "0812345678",
+      service: service || "Pesanan Khusus",
+      serviceIcon: "📦",
+      status: "aktif",
+      lastMessage: "Halo driver!",
+      time: "Baru saja",
+      history: [
+        { sender: 'customer', text: 'Halo driver, mohon diproses ya!' }
+      ]
+    };
+    chatOrderDatabase.unshift(ord);
+  }
+  bukaChatLangsung(ord.id, false);
+}
+
+function renderRoomMessages() {
+  if (!activeChatOrder) return;
+  const box = document.getElementById('roomMessageList');
+  box.innerHTML = activeChatOrder.history.map(m => {
+    const isDriver = (m.sender === 'driver');
+    return `
+      <div class="${isDriver ? 'chat-bubble-out' : 'chat-bubble-in'}">
+        ${m.media ? `<div class="chat-media-box"><img src="${m.media}" alt="Media Chat" onclick="bukaFullImage(this.src)" style="cursor:pointer;"></div>` : ''}
+        <div>${m.text ? m.text.replace(/\n/g, '<br>') : ''}</div>
+        <div class="chat-bubble-meta">
+          <span>Baru saja</span>
+          ${isDriver ? `<span class="check-blue">✓✓</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+function kirimPesanDriver() {
+  if (!activeChatOrder) return;
+  const inp = document.getElementById('driverChatTextInput');
+  const txt = inp.value.trim();
+  if (!txt) return;
+
+  activeChatOrder.history.push({
+    sender: 'driver',
+    text: txt
+  });
+  activeChatOrder.lastMessage = txt;
+  inp.value = '';
+  renderRoomMessages();
+}
+
+function kirimMediaDriver(e) {
+  if (!activeChatOrder) return;
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const b64 = event.target.result;
+    activeChatOrder.history.push({
+      sender: 'driver',
+      text: '📷 [Foto dikirim oleh Driver]',
+      media: b64
+    });
+    activeChatOrder.lastMessage = '📷 [Foto dikirim oleh Driver]';
+    renderRoomMessages();
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+}
+
+// 3 TOMBOL LAMPIRAN SKEMA SOP RESMI DENGAN PETUNJUK KLIK GAMBAR
+function lampirkanSkemaFeeProduk() {
+  if (!activeChatOrder) return;
+  activeChatOrder.history.push({
+    sender: 'driver',
+    text: '📋 *SOP RESMI: SKEMA FEE PER PRODUK NEXT LEVEL*\nBerikut rincian transparansi fee penanganan belanja produk yang berlaku.\n\n_(Silakan klik gambar di atas untuk melihat ukuran penuh / jelas)_',
+    media: LINK_SKEMA_FEE_PRODUK
+  });
+  activeChatOrder.lastMessage = '📋 [Mengirimkan Skema Fee Produk]';
+  renderRoomMessages();
+}
+
+function lampirkanSkemaUangTunggu() {
+  if (!activeChatOrder) return;
+  activeChatOrder.history.push({
+    sender: 'driver',
+    text: '⏳ *SOP RESMI: SKEMA UANG TUNGGU & FEE KESEPAKATAN*\nBerikut rincian tarif waktu tunggu dan penanganan kesepakatan khusus.\n\n_(Silakan klik gambar di atas untuk melihat ukuran penuh / jelas)_',
+    media: LINK_SKEMA_UANG_TUNGGU
+  });
+  activeChatOrder.lastMessage = '⏳ [Mengirimkan Skema Uang Tunggu & Kesepakatan]';
+  renderRoomMessages();
+}
+
+function lampirkanSkemaLuarArea() {
+  if (!activeChatOrder) return;
+  activeChatOrder.history.push({
+    sender: 'driver',
+    text: '🗺️ *SOP RESMI: PESANAN DI LUAR AREA JANGKAUAN*\nBerikut rincian ketentuan dan tarif penanganan untuk rute di luar batas operasional normal.\n\n_(Silakan klik gambar di atas untuk melihat ukuran penuh / jelas)_',
+    media: LINK_SKEMA_LUAR_AREA
+  });
+  activeChatOrder.lastMessage = '🗺️ [Mengirimkan SOP Luar Jangkauan Area]';
+  renderRoomMessages();
+}
+
+// FITUR LIGHTBOX BUKA GAMBAR FULLSCREEN DENGAN TOMBOL SILANG
+function bukaFullImage(srcUrl) {
+  const modal = document.getElementById('modalFullImageView');
+  const img = document.getElementById('fullImageTarget');
+  img.src = srcUrl;
+  modal.classList.add('open');
+}
+
+function tutupFullImageDirect() {
+  document.getElementById('modalFullImageView').classList.remove('open');
+}
+
+function tutupFullImage(e) {
+  if (e.target.id === 'modalFullImageView') {
+    tutupFullImageDirect();
+  }
+}
+
+function bukaFormBillDariChat() {
+  if (!activeChatOrder) return;
+  navigatedFromChatRoom = true;
+  const s = activeChatOrder.service.toLowerCase();
+  if (s.includes('jastip')) {
+    openPageDriver('jastip');
+  } else if (s.includes('ojek')) {
+    openPageDriver('ojek');
+  } else if (s.includes('ambil')) {
+    openPageDriver('ambil');
+  } else {
+    openPageDriver('custom');
+  }
+}
+
+// ================= RESET T & OWNER GENERATOR =================
+function bukaModalResetT() {
+  const now = Date.now();
+  if (tokenLockoutUntil && now < tokenLockoutUntil) {
+    const sisaMenit = Math.ceil((tokenLockoutUntil - now) / 60000);
+    alert(`🔒 Input token dibekukan sementara karena salah 3x. Silakan coba lagi dalam ${sisaMenit} menit.`);
+    return;
+  }
+
+  document.getElementById('lblResetCurrentLot').innerText = `Orderan Ke-${driverData.lot} (LOT ${driverData.lot})`;
+  document.getElementById('lblResetCurrentT').innerText = 'Rp ' + (driverData.t || 0).toLocaleString('id-ID');
+  document.getElementById('inputTokenDriver').value = '';
+  document.getElementById('resetErrorMsg').classList.add('hidden');
+  document.getElementById('modalResetT').classList.add('open');
+}
+
+function tutupModalResetT() {
+  document.getElementById('modalResetT').classList.remove('open');
+}
+
+function verifikasiTokenDriver() {
+  const now = Date.now();
+  if (tokenLockoutUntil && now < tokenLockoutUntil) {
+    const sisa = Math.ceil((tokenLockoutUntil - now) / 60000);
+    alert(`🔒 Akses masih dibekukan. Tunggu ${sisa} menit lagi.`);
+    return;
+  }
+
+  const inputToken = document.getElementById('inputTokenDriver').value.trim();
+  const tokenValid = hitungTokenRahasia(driverData.lot, driverData.tgl);
+
+  if (!inputToken) {
+    alert("Masukkan 4-digit token dari Owner!");
+    return;
+  }
+
+  if (inputToken === tokenValid) {
+    failedTokenAttempts = 0;
+    const nominalLunas = driverData.t || 0;
+    driverData.t = 0;
+    
+    syncDriverToFormAndStorage();
+    updateFinancialDashboard();
+
+    orderIncomeBook.unshift({
+      id: Date.now(),
+      orderNum: 'SETOR',
+      tanggal: getTodayString(),
+      timestamp: Date.now(),
+      time: new Date().toLocaleTimeString('id-ID'),
+      serviceName: `🔄 PELUNASAN SETORAN KAS`,
+      lotNo: `LOT ${driverData.lot}`,
+      incomeDriver: 0,
+      setoranT: 0,
+      details: `Lunas Rp ${nominalLunas.toLocaleString('id-ID')} via Token OTP Sah`,
+      billText: ''
+    });
+    localStorage.setItem('nl_income_book', JSON.stringify(orderIncomeBook));
+
+    tutupModalResetT();
+    renderBukuKas();
+    alert("🎉 TOKEN VALID! Nilai Setoran Wajib (T) berhasil di-reset menjadi Rp 0. Akses pesanan Anda telah terbuka penuh.");
+  } else {
+    failedTokenAttempts++;
+    const sisa = 3 - failedTokenAttempts;
+    const errBox = document.getElementById('resetErrorMsg');
+    errBox.classList.remove('hidden');
+
+    if (failedTokenAttempts >= 3) {
+      tokenLockoutUntil = Date.now() + (30 * 60 * 1000);
+      failedTokenAttempts = 0;
+      errBox.innerText = "❌ Anda salah 3 kali! Fitur token dibekukan selama 30 menit.";
+      alert("⚠️ Salah memasukkan token 3 kali! Sistem dibekukan selama 30 menit.");
+      tutupModalResetT();
+    } else {
+      errBox.innerText = `❌ Token Salah! Sisa percobaan: ${sisa}x lagi.`;
+    }
+  }
+}
+
+function bukaModalLoginOwner() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('inputMasterPin').value = '';
+  document.getElementById('modalLoginOwner').classList.add('open');
+}
+
+function tutupModalLoginOwner() {
+  document.getElementById('modalLoginOwner').classList.remove('open');
+}
+
+function bukaGeneratorOwner() {
+  const pin = document.getElementById('inputMasterPin').value.trim();
+  if (pin === MASTER_OWNER_PIN) {
+    tutupModalLoginOwner();
+    document.getElementById('inputGenLot').value = '';
+    document.getElementById('hasilTokenBox').classList.add('hidden');
+    document.getElementById('copySuccessAlert').classList.add('hidden');
+    document.getElementById('modalGeneratorOwner').classList.add('open');
+  } else {
+    alert("❌ Master PIN Owner Salah!");
+  }
+}
+
+function tutupModalGeneratorOwner() {
+  document.getElementById('modalGeneratorOwner').classList.remove('open');
+}
+
+function eksekusiBuatToken() {
+  const lotInput = document.getElementById('inputGenLot').value.trim();
+  if (!lotInput) {
+    alert("Masukkan nomor LOT driver!");
+    return;
+  }
+  const tglStr = getTodayDDMMYY();
+  const token = hitungTokenRahasia(lotInput, tglStr);
+  
+  document.getElementById('displayOtpResult').innerText = token;
+  document.getElementById('hasilTokenBox').classList.remove('hidden');
+  document.getElementById('copySuccessAlert').classList.add('hidden');
+}
+
+function salinKodeTokenKeClipboard() {
+  const token = document.getElementById('displayOtpResult').innerText.trim();
+  if (!token) return;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(token).then(() => {
+      document.getElementById('copySuccessAlert').classList.remove('hidden');
+    });
+  } else {
+    const dummy = document.createElement("textarea");
+    document.body.appendChild(dummy);
+    dummy.value = token;
+    dummy.select();
+    document.execCommand("copy");
+    document.body.removeChild(dummy);
+    document.getElementById('copySuccessAlert').classList.remove('hidden');
+  }
+}
+
+// ================= FITUR WA CEPAT & METODE BAYAR =================
+function kirimKabarWaCepat(tipe) {
+  let pesan = "";
+  if (tipe === 'otw_toko') {
+    pesan = `Halo Kak! Driver Next Level (${driverData.driver}) sudah menerima pesanan kakak dan sekarang sedang langsung meluncur ke lokasi pembelian ya 🛵💨`;
+  } else if (tipe === 'antre') {
+    pesan = `Halo Kak! Saya sudah sampai di lokasi dan saat ini sedang antre/memilihkan barang pesanan kakak. Mohon ditunggu ya 🙏`;
+  } else if (tipe === 'otw_antar') {
+    pesan = `Kabar baik Kak! Belanjaan/pesanan kakak sudah beres. Sekarang saya langsung OTW meluncur mengantar ke alamat kakak ya! 🚀`;
+  }
+  const url = `https://wa.me/?text=${encodeURIComponent(pesan)}`;
+  window.open(url, '_blank');
+}
+
+function pilihMetodeBayar(metode) {
+  currentPaymentMethod = metode;
+  const btnCash = document.getElementById('payMethodCash');
+  const btnTrf = document.getElementById('payMethodTransfer');
+  if (metode === 'TUNAI (COD)') {
+    btnCash.classList.add('active');
+    btnTrf.classList.remove('active');
+  } else {
+    btnTrf.classList.add('active');
+    btnCash.classList.remove('active');
+  }
+}
+
+function panggilBantuanSOS() {
+  const konfirm = confirm("🚨 APAKAH ANDA BUTUH BANTUAN DARURAT DI JALAN?\n\nTombol ini akan otomatis membuka WhatsApp untuk memanggil bantuan ke Admin/Rekan Driver.");
+  if (!konfirm) return;
+  const pesan = `🚨 *PANGGILAN DARURAT (SOS ARMADA NEXT LEVEL)* 🚨\n\nAdmin & Rekan driver, saya *${driverData.driver}* (${driverData.motor}) sedang mengalami kendala darurat di jalan (mogok / ban bocor / butuh bantuan).\n\nMohon jika ada rekan driver terdekat segera merapat atau hubungi saya. Terima kasih! 🙏`;
+  const url = `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(pesan)}`;
+  window.open(url, '_blank');
+}
+
+function ambilOrderanMock(title, incDriver, poinFee) {
+  hentikanAlarmOrderan();
+  driverData.lot += 1;
+  driverData.k += 2000;
+  driverData.a += 1000;
+  const fTambahan = hitungKonversiF(poinFee);
+  driverData.f += fTambahan;
+  driverData.t = driverData.k + driverData.a + driverData.f;
+
+  accumulatedDriverIncome += incDriver; 
+  syncDriverToFormAndStorage();
+
+  const lotCode = `NL.${driverData.tgl}.${driverData.lot}.J-K.${driverData.k}-A.${driverData.a}-F.${driverData.f}-T.${driverData.t}`;
+  const mockBillHTML = generateBillHTML_Dispatch(title, incDriver, driverData.t, lotCode);
+  catatKeBukuKas(title, incDriver, driverData.t, "Dispatch Order Masuk", mockBillHTML, lotCode);
+  updateFinancialDashboard(); 
+  alert(`Pesanan "${title}" berhasil diambil!`);
+}
+
+function catatKeBukuKas(serviceName, incomeDriver, totalSetoranTAkumulasi, details, billText, lotCode) {
+  const todayStr = getTodayString();
+  const todayOrders = orderIncomeBook.filter(item => item.tanggal === todayStr && item.orderNum !== 'SETOR');
+  const orderNum = todayOrders.length + 1;
+  orderIncomeBook.unshift({ 
+    id: Date.now(), 
+    orderNum: orderNum, 
+    tanggal: todayStr, 
+    timestamp: Date.now(), 
+    time: new Date().toLocaleTimeString('id-ID'), 
+    serviceName: serviceName, 
+    lotNo: lotCode || `NL.${driverData.tgl}.${driverData.lot}`, 
+    incomeDriver: incomeDriver, 
+    setoranT: totalSetoranTAkumulasi, 
+    details: details, 
+    billText: billText || '' 
+  });
+  bersihkanDataKadaluarsa();
+  localStorage.setItem('nl_income_book', JSON.stringify(orderIncomeBook));
+  localStorage.setItem('nl_driver_income', accumulatedDriverIncome.toString());
+  localStorage.setItem('nl_last_activity_time', Date.now().toString());
+}
+
+function bersihkanDataKadaluarsa() {
+  const tigaPuluhHariMs = 30 * 24 * 60 * 60 * 1000; 
+  const sekarang = Date.now();
+  orderIncomeBook = orderIncomeBook.filter(item => { return (sekarang - (item.timestamp || sekarang)) < tigaPuluhHariMs; });
+}
+
+function checkAutoExpiry30Hari() {
+  const sekarang = Date.now();
+  const tigaPuluhHariMs = 30 * 24 * 60 * 60 * 1000;
+  let lastActivity = parseInt(localStorage.getItem('nl_last_activity_time') || '0');
+  
+  if (lastActivity && (sekarang - lastActivity) > tigaPuluhHariMs) {
+    driverData.lot = 0; driverData.k = 0; driverData.a = 0; driverData.f = 0; driverData.t = 0;
+    accumulatedDriverIncome = 0;
+    orderIncomeBook = [];
+    localStorage.removeItem('nl_income_book');
+    localStorage.removeItem('nl_driver_income');
+    syncDriverToFormAndStorage();
+  }
+  localStorage.setItem('nl_last_activity_time', sekarang.toString());
+}
+
+function filterKeuanganHari(tab) {
+  currentKeuanganTab = tab;
+  const btnHariIni = document.getElementById('btnTabHariIni'); 
+  const btnRiwayat = document.getElementById('btnTabHariKemarin');
+  if (tab === 'today') {
+    btnHariIni.style.background = '#facc15'; btnHariIni.style.color = '#000'; btnHariIni.style.border = 'none';
+    btnRiwayat.style.background = 'rgba(0,0,0,0.4)'; btnRiwayat.style.color = '#fde047'; btnRiwayat.style.border = '1px solid #facc15';
+    document.getElementById('labelRincianPeriode').innerText = 'Ringkasan Hari Ini:';
+  } else {
+    btnRiwayat.style.background = '#facc15'; btnRiwayat.style.color = '#000'; btnRiwayat.style.border = 'none';
+    btnHariIni.style.background = 'rgba(0,0,0,0.4)'; btnHariIni.style.color = '#fde047'; btnRiwayat.style.border = '1px solid #facc15';
+    document.getElementById('labelRincianPeriode').innerText = 'Ringkasan Riwayat Pesanan:';
+  }
+  renderBukuKas();
+}
+
+function renderBukuKas() {
+  bersihkanDataKadaluarsa();
+  const todayStr = getTodayString();
+  const listEl = document.getElementById('listOrderanKeuangan'); 
+  const emptyEl = document.getElementById('emptyOrderanKeuangan');
+  const filtered = orderIncomeBook.filter(item => { return (currentKeuanganTab === 'today') ? (item.tanggal === todayStr) : (item.tanggal !== todayStr); });
+  
+  const totIncome = filtered.reduce((acc, cur) => acc + (cur.incomeDriver || 0), 0); 
+  const totSetoran = driverData.t || 0;
+
+  document.getElementById('detailTotalPendapatan').innerText = `Rp ${totIncome.toLocaleString('id-ID')}`; 
+  document.getElementById('detailTotalSetoranT').innerText = `Rp ${totSetoran.toLocaleString('id-ID')}`;
+
+  if (filtered.length === 0) {
+    emptyEl.style.display = 'block';
+    emptyEl.innerText = (currentKeuanganTab === 'today') ? 'Belum ada orderan yang tercatat di hari ini.' : 'Belum ada riwayat pesanan sebelumnya.';
+    listEl.innerHTML = ''; return;
+  }
+  emptyEl.style.display = 'none';
+  listEl.innerHTML = filtered.map(item => `
+    <div class="income-item-card" onclick="bukaBillDariBukuKas(${item.id})">
+      <div class="flex justify-between items-start">
+        <div>
+          <span style="background:#facc15; color:#000; font-size:9px; padding:2px 6px; border-radius:4px; font-weight:900;">#${item.orderNum}</span>
+          <b class="text-yellow-300 ml-1" style="font-size:12px;">${item.serviceName}</b>
+          <div style="font-size:9.5px; color:#d1d5db; margin-top:2px;">${item.lotNo} — ${item.tanggal} (${item.time})</div>
+        </div>
+        <div class="text-right">
+          <div class="font-black text-green-400" style="font-size:12px;">${item.incomeDriver > 0 ? '+ Rp ' + item.incomeDriver.toLocaleString('id-ID') : '-'}</div>
+          <div style="font-size:9px; color:rgba(254,240,138,0.9);">Setor T: Rp ${item.setoranT.toLocaleString('id-ID')}</div>
+        </div>
+      </div>
+      <div class="flex justify-between items-center italic" style="font-size:9px; color:#e5e7eb; margin-top:6px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;">
+        <span>${item.details}</span><span class="text-yellow-300 font-bold" style="font-size:8.5px;">${item.billText ? '🔍 Lihat Bill ➔' : ''}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function bukaBillDariBukuKas(itemId) {
+  const order = orderIncomeBook.find(o => o.id === itemId);
+  if (order && order.billText) { 
+    tampilkanBill(order.billText, `STRUK: ${order.serviceName} (#ORDER ${order.orderNum})`, true); 
+  }
+}
+
+function kirimLaporanTeksKeAdmin() {
+  const todayStr = getTodayString();
+  const filtered = orderIncomeBook.filter(item => { return (currentKeuanganTab === 'today') ? (item.tanggal === todayStr) : (item.tanggal !== todayStr); });
+  if (filtered.length === 0) { alert("Belum ada data transaksi pada periode ini untuk dikirimkan."); return; }
+
+  const totIncome = document.getElementById('detailTotalPendapatan').innerText;
+  const totSetoran = document.getElementById('detailTotalSetoranT').innerText;
+  const periode = document.getElementById('labelRincianPeriode').innerText.replace(':', '');
+
+  let detailTeks = "";
+  filtered.forEach(item => {
+    detailTeks += `\n🔹 *[ORDER #${item.orderNum}] - ${item.serviceName}*\n`;
+    detailTeks += `▶️ *No. LOT:* ${item.lotNo}\n`;
+    detailTeks += `▶️ *Waktu:* ${item.tanggal} (${item.time})\n`;
+    detailTeks += `▶️ *Pendapatan:* Rp ${item.incomeDriver.toLocaleString('id-ID')}\n`;
+    detailTeks += `▶️ *Setoran T:* Rp ${item.setoranT.toLocaleString('id-ID')}\n`;
+    detailTeks += `▶️ *Sumber:* ${item.details}\n`;
+    detailTeks += `───────────────────────────`;
+  });
+
+  const waMsg = 
+`📊 *REKAP KEUANGAN DRIVER NEXT LEVEL* 📊
+═════════════════════════
+👤 *Driver:* ${driverData.driver} (${driverData.motor})
+📅 *Periode:* ${periode}
+💵 *Total Pendapatan:* *${totIncome}*
+📥 *Total Setoran Wajib (T):* *${totSetoran}*
+═════════════════════════
+
+📋 *RINCIAN TRANSAKSI:*
+${detailTeks}
+
+_Mohon diperiksa ya Admin! Terima kasih._ 🙏`;
+
+  const waUrl = `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(waMsg)}`;
+  lastReportSentDate = getTodayString();
+  localStorage.setItem('nl_last_report_date', lastReportSentDate);
+  checkLockRule();
+
+  const a = document.createElement('a');
+  a.href = waUrl;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+// ================= DRAFT & AUTO-SAVE JASTIP =================
+function saveJastipState() {
+  const lokasiData = [];
+  document.querySelectorAll('#jastipLokasi .lokasiBox').forEach(box => {
+    const toko = box.querySelector('.jNama').value || '';
+    const prods = [];
+    box.querySelectorAll('.prodCardBox').forEach(r => {
+      const feeEl = r.querySelector('.feeVal');
+      const rawFee = feeEl ? feeEl.getAttribute('data-fee') : '0';
+      prods.push({
+        nama: r.querySelector('.dNama').value || '',
+        jml: r.querySelector('.dJml').value || '1',
+        harga: r.querySelector('.dHarga').value || '0',
+        rawFee: rawFee
+      });
+    });
+    lokasiData.push({ toko, prods });
+  });
+
+  const extraData = [];
+  document.querySelectorAll('#jastipExtraServices .extra-block').forEach(b => {
+    const type = b.getAttribute('data-type');
+    const item = { type };
+    if (type === 'ambil') {
+      item.nama = b.querySelector('.exAmbilNama') ? b.querySelector('.exAmbilNama').value : '';
+      item.fee = b.querySelector('.exAmbilFee') ? b.querySelector('.exAmbilFee').value : '2000';
+    } else if (type === 'ojek') {
+      item.rute = b.querySelector('.exOjekRute') ? b.querySelector('.exOjekRute').value : '';
+      item.ongkir = b.querySelector('.exOjekOngkir') ? b.querySelector('.exOjekOngkir').value : '10000';
+    } else if (type === 'custom') {
+      item.desc = b.querySelector('.exCustomDesc') ? b.querySelector('.exCustomDesc').value : '';
+      item.fee = b.querySelector('.exCustomFee') ? b.querySelector('.exCustomFee').value : '15000';
+    } else if (type === 'jastip') {
+      item.nama = b.querySelector('.exJastipNama') ? b.querySelector('.exJastipNama').value : '';
+      item.barang = b.querySelector('.exJastipBarang') ? b.querySelector('.exJastipBarang').value : '20000';
+      item.fee = b.querySelector('.exJastipFee') ? b.querySelector('.exJastipFee').value : '2000';
+    }
+    extraData.push(item);
+  });
+
+  const state = {
+    lokasi: lokasiData,
+    extra: extraData,
+    jarak: document.getElementById('jJarak') ? document.getElementById('jJarak').value : '1',
+    tunggu: document.getElementById('jTunggu') ? document.getElementById('jTunggu').value : '0',
+    parkir: document.getElementById('jParkir') ? document.getElementById('jParkir').value : '0',
+    sepakat: document.getElementById('jSepakat') ? document.getElementById('jSepakat').value : '0'
+  };
+  localStorage.setItem('nl_jastip_draft', JSON.stringify(state));
+}
+
+function restoreJastipState() {
+  const raw = localStorage.getItem('nl_jastip_draft');
+  if (!raw) return false;
+  try {
+    const data = JSON.parse(raw);
+    if (!data.lokasi || data.lokasi.length === 0) return false;
+    const box = document.getElementById('jastipLokasi');
+    box.innerHTML = '';
+    jastipId = 0;
+    data.lokasi.forEach(lok => {
+      jastipId++;
+      const div = document.createElement('div');
+      div.className = 'lokasiBox';
+      div.id = 'jlok-' + jastipId;
+      div.innerHTML = `
+        <div class="flex justify-between items-center mb-2">
+          <b class="text-yellow-400 text-xs">LOKASI ${jastipId}</b>
+          <button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('jlok-${jastipId}').remove(); saveJastipState();">HAPUS</button>
+        </div>
+        <div class="field mb-2"><label>NAMA WARUNG / TOKO</label><input class="jNama" value="${lok.toko}" oninput="saveJastipState()"></div>
+        <div id="jprod-${jastipId}"></div>
+        <button class="btn-sm mt-2" onclick="addJastipProduk(${jastipId})">+ DESKRIPSI PRODUK</button>
+      `;
+      box.appendChild(div);
+      
+      const pbox = div.querySelector('#jprod-' + jastipId);
+      if (lok.prods && lok.prods.length > 0) {
+        lok.prods.forEach(p => {
+          const pdiv = document.createElement('div');
+          pdiv.className = 'prodCardBox';
+          pdiv.innerHTML = `
+            <div class="field mb-1.5">
+              <div class="flex justify-between items-center"><label>NAMA / DESKRIPSI PRODUK</label><button class="text-red-300 font-bold" style="font-size:10px;" onclick="this.closest('.prodCardBox').remove(); recalcLokasi(${jastipId}); saveJastipState();">✕ Hapus</button></div>
+              <textarea class="dNama" rows="1" placeholder="Tulis nama barang..." style="resize:none; overflow:hidden;" oninput="autoExpandTextarea(this); saveJastipState();">${p.nama}</textarea>
+            </div>
+            <div class="flex items-end" style="gap:6px;">
+              <div class="field" style="flex:0.6;"><label>JUMLAH</label><input class="dJml" type="text" inputmode="numeric" value="${p.jml}" oninput="recalcLokasi(${jastipId}); saveJastipState();"></div>
+              <div class="field" style="flex:1;"><label>HARGA RP</label><input class="dHarga" type="text" inputmode="numeric" value="${p.harga}" oninput="recalcLokasi(${jastipId}); saveJastipState();"></div>
+              <div class="feeBadge" style="flex:1;">FEE <span class="feeVal ml-1" data-fee="${p.rawFee || 0}">-</span></div>
+            </div>
+          `;
+          pbox.appendChild(pdiv);
+          autoExpandTextarea(pdiv.querySelector('.dNama'));
+        });
+        recalcLokasi(jastipId);
+      }
+    });
+
+    const extraBox = document.getElementById('jastipExtraServices');
+    extraBox.innerHTML = '';
+    if (data.extra && data.extra.length > 0) {
+      data.extra.forEach(ex => { pilihJasaEkstra(ex.type, ex, false); });
+    }
+
+    if (document.getElementById('jJarak')) document.getElementById('jJarak').value = data.jarak || '1';
+    if (document.getElementById('jTunggu')) document.getElementById('jTunggu').value = data.tunggu || '0';
+    if (document.getElementById('jParkir')) document.getElementById('jParkir').value = data.parkir || '0';
+    if (document.getElementById('jSepakat')) document.getElementById('jSepakat').value = data.sepakat || '0';
+    return true;
+  } catch(e) { return false; }
+}
+
+function addJastipLokasi() {
+  jastipId++;
+  const box = document.getElementById('jastipLokasi');
+  const div = document.createElement('div');
+  div.className = 'lokasiBox';
+  div.id = 'jlok-' + jastipId;
+  div.innerHTML = `
+    <div class="flex justify-between items-center mb-2">
+      <b class="text-yellow-400 text-xs">LOKASI ${jastipId}</b>
+      <button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('jlok-${jastipId}').remove(); saveJastipState();">HAPUS</button>
+    </div>
+    <div class="field mb-2"><label>NAMA WARUNG / TOKO</label><input class="jNama" value="Warung ${jastipId}" oninput="saveJastipState()"></div>
+    <div id="jprod-${jastipId}"></div>
+    <button class="btn-sm mt-2" onclick="addJastipProduk(${jastipId})">+ DESKRIPSI PRODUK</button>
+  `;
+  box.appendChild(div);
+  addJastipProduk(jastipId);
+  saveJastipState();
+}
+
+function addJastipProduk(lid) {
+  const pbox = document.getElementById('jprod-' + lid);
+  if (!pbox) return;
+  const div = document.createElement('div');
+  div.className = 'prodCardBox';
+  div.innerHTML = `
+    <div class="field mb-1.5">
+      <div class="flex justify-between items-center"><label>NAMA / DESKRIPSI PRODUK</label><button class="text-red-300 font-bold" style="font-size:10px;" onclick="this.closest('.prodCardBox').remove(); recalcLokasi(${lid}); saveJastipState();">✕ Hapus</button></div>
+      <textarea class="dNama" rows="1" placeholder="Tulis nama barang..." style="resize:none; overflow:hidden;" oninput="autoExpandTextarea(this); saveJastipState();"></textarea>
+    </div>
+    <div class="flex items-end" style="gap:6px;">
+      <div class="field" style="flex:0.6;"><label>JUMLAH</label><input class="dJml" type="text" inputmode="numeric" value="1" oninput="recalcLokasi(${lid}); saveJastipState();"></div>
+      <div class="field" style="flex:1;"><label>HARGA RP</label><input class="dHarga" type="text" inputmode="numeric" value="0" oninput="recalcLokasi(${lid}); saveJastipState();"></div>
+      <div class="feeBadge" style="flex:1;">FEE <span class="feeVal ml-1" data-fee="0">-</span></div>
+    </div>
+  `;
+  pbox.appendChild(div);
+  recalcLokasi(lid);
+  saveJastipState();
+}
+
+function autoExpandTextarea(el) { el.style.height = 'auto'; el.style.height = (el.scrollHeight) + 'px'; }
+
+function recalcLokasi(lid) {
+  const box = document.getElementById('jlok-' + lid);
+  if (!box) return;
+  const prods = [];
+  box.querySelectorAll('.prodCardBox').forEach(r => {
+    const h = parseInt(r.querySelector('.dHarga').value || 0); const q = parseInt(r.querySelector('.dJml').value || 0);
+    if (h > 0 && q > 0) prods.push({ h: h, q: q, row: r });
+  });
+
+  const grups = {};
+  prods.forEach(p => { const g = getGrupHarga(p.h); if (!grups[g]) grups[g] = { totalHarga: 0, totalQty: 0, list: [] }; grups[g].totalHarga += p.h * p.q; grups[g].totalQty += p.q; grups[g].list.push(p); });
+  Object.keys(grups).forEach(g => {
+    const gd = grups[g];
+    const feeGrup = (g === 'NEW2') ? gd.list.reduce((a, b) => a + getFeeTierNew2(b.h, b.q), 0) : hitungFeeGrup(g, gd.totalHarga, gd.totalQty);
+    let feePerPcs = gd.totalQty > 0 ? Math.round(feeGrup / gd.totalQty) : 0;
+    gd.list.forEach(item => { 
+      const b = item.row.querySelector('.feeVal'); 
+      if (b) {
+        const rawItemFee = feePerPcs * item.q;
+        b.setAttribute('data-fee', rawItemFee);
+        b.innerText = formatFeeKVal(rawItemFee); 
+      }
+    });
+  });
+}
+
+function saveAmbilState() {
+  const loks = [];
+  document.querySelectorAll('#ambilLokasi .lokasiBox').forEach(box => {
+    loks.push(box.querySelector('.aNama') ? box.querySelector('.aNama').value : '');
+  });
+  const state = {
+    lokasi: loks,
+    jarak: document.getElementById('aJarak') ? document.getElementById('aJarak').value : '3',
+    parkir: document.getElementById('aParkir') ? document.getElementById('aParkir').value : '0'
+  };
+  localStorage.setItem('nl_ambil_draft', JSON.stringify(state));
+}
+
+function restoreAmbilState() {
+  const raw = localStorage.getItem('nl_ambil_draft');
+  if (!raw) return false;
+  try {
+    const data = JSON.parse(raw);
+    if (!data.lokasi || data.lokasi.length === 0) return false;
+    const box = document.getElementById('ambilLokasi');
+    box.innerHTML = '';
+    ambilId = 0;
+    data.lokasi.forEach(lokNama => {
+      ambilId++;
+      const div = document.createElement('div');
+      div.className = 'lokasiBox';
+      div.id = 'alok-' + ambilId;
+      div.innerHTML = `
+        <div class="flex justify-between items-center mb-1">
+          <b class="text-yellow-400 text-xs">LOKASI AMBIL ${ambilId}</b>
+          <button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('alok-${ambilId}').remove(); saveAmbilState();">HAPUS</button>
+        </div>
+        <div class="field"><label>KETERANGAN BARANG & LOKASI</label><input class="aNama" value="${lokNama}" oninput="saveAmbilState()"></div>
+      `;
+      box.appendChild(div);
+    });
+    if (document.getElementById('aJarak')) document.getElementById('aJarak').value = data.jarak || '3';
+    if (document.getElementById('aParkir')) document.getElementById('aParkir').value = data.parkir || '0';
+    return true;
+  } catch(e) { return false; }
+}
+
+function addAmbilLokasi() {
+  ambilId++;
+  const box = document.getElementById('ambilLokasi');
+  const div = document.createElement('div');
+  div.className = 'lokasiBox';
+  div.id = 'alok-' + ambilId;
+  div.innerHTML = `
+    <div class="flex justify-between items-center mb-1">
+      <b class="text-yellow-400 text-xs">LOKASI AMBIL ${ambilId}</b>
+      <button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('alok-${ambilId}').remove(); saveAmbilState();">HAPUS</button>
+    </div>
+    <div class="field"><label>KETERANGAN BARANG & LOKASI</label><input class="aNama" value="Lokasi Pengambilan ${ambilId}" oninput="saveAmbilState()"></div>
+  `;
+  box.appendChild(div);
+  saveAmbilState();
+}
+
+function saveOjekState() {
+  const state = { jarak: document.getElementById('oJarak') ? document.getElementById('oJarak').value : '6' };
+  localStorage.setItem('nl_ojek_draft', JSON.stringify(state));
+}
+function restoreOjekState() {
+  const raw = localStorage.getItem('nl_ojek_draft');
+  if (!raw) return false;
+  try {
+    const data = JSON.parse(raw);
+    if (document.getElementById('oJarak')) document.getElementById('oJarak').value = data.jarak || '6';
+    return true;
+  } catch(e) { return false; }
+}
+
+function saveCustomState() {
+  const state = {
+    desc: document.getElementById('cDeskripsi') ? document.getElementById('cDeskripsi').value : '',
+    jarak: document.getElementById('cJarak') ? document.getElementById('cJarak').value : '5',
+    sepakat: document.getElementById('cSepakat') ? document.getElementById('cSepakat').value : '15000',
+    parkir: document.getElementById('cParkir') ? document.getElementById('cParkir').value : '0',
+    tunggu: document.getElementById('cTunggu') ? document.getElementById('cTunggu').value : '0'
+  };
+  localStorage.setItem('nl_custom_draft', JSON.stringify(state));
+}
+function restoreCustomState() {
+  const raw = localStorage.getItem('nl_custom_draft');
+  if (!raw) return false;
+  try {
+    const data = JSON.parse(raw);
+    if (document.getElementById('cDeskripsi')) document.getElementById('cDeskripsi').value = data.desc || '';
+    if (document.getElementById('cJarak')) document.getElementById('cJarak').value = data.jarak || '5';
+    if (document.getElementById('cSepakat')) document.getElementById('cSepakat').value = data.sepakat || '15000';
+    if (document.getElementById('cParkir')) document.getElementById('cParkir').value = data.parkir || '0';
+    if (document.getElementById('cTunggu')) document.getElementById('cTunggu').value = data.tunggu || '0';
+    return true;
+  } catch(e) { return false; }
+}
+
+function openTambahJasaModal(target) { activeTargetService = target; document.getElementById('modalTambahJasa').classList.add('open'); }
+function closeTambahJasaModal() { document.getElementById('modalTambahJasa').classList.remove('open'); }
+
+function pilihJasaEkstra(jenis, existingData = null, triggerSave = true) {
+  closeTambahJasaModal();
+  const targetBox = document.getElementById(activeTargetService + 'ExtraServices');
+  if (!targetBox) return;
+
+  const extraId = Date.now();
+  let blockHtml = '';
+
+  if (jenis === 'ambil') {
+    const valNama = existingData ? existingData.nama : '';
+    const valFee = existingData ? existingData.fee : '2000';
+    blockHtml = `
+      <div class="extra-block" id="extra-${extraId}" data-type="ambil">
+        <div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">📦 + JASA AMBIL BARANG</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div>
+        <div class="field mb-2"><label>KETERANGAN BARANG</label><input class="exAmbilNama" value="${valNama}" placeholder="Contoh: Baju laundry / Paket kurir" oninput="saveJastipState()"></div>
+        <div class="field"><label>FEE AMBIL BARANG RP</label><input class="exAmbilFee" type="text" inputmode="numeric" value="${valFee}" oninput="saveJastipState()"></div>
+      </div>
+    `;
+  } else if (jenis === 'ojek') {
+    const valRute = existingData ? existingData.rute : '';
+    const valOngkir = existingData ? existingData.ongkir : '10000';
+    blockHtml = `
+      <div class="extra-block" id="extra-${extraId}" data-type="ojek">
+        <div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">🏍️ + JASA OJEK PANGGILAN</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div>
+        <div class="field mb-2"><label>RUTE OJEK</label><input class="exOjekRute" value="${valRute}" placeholder="Contoh: Titik Jemput ➔ Tujuan" oninput="saveJastipState()"></div>
+        <div class="field"><label>TARIF OJEK RP</label><input class="exOjekOngkir" type="text" inputmode="numeric" value="${valOngkir}" oninput="saveJastipState()"></div>
+      </div>
+    `;
+  } else if (jenis === 'custom') {
+    const valDesc = existingData ? existingData.desc : '';
+    const valFee = existingData ? existingData.fee : '15000';
+    blockHtml = `
+      <div class="extra-block" id="extra-${extraId}" data-type="custom">
+        <div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">⭐ + JASA CUSTOM KHUSUS</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div>
+        <div class="field mb-2"><label>DESKRIPSI TUGAS KHUSUS</label><input class="exCustomDesc" value="${valDesc}" placeholder="Contoh: Antre obat / Temenin di RS" oninput="saveJastipState()"></div>
+        <div class="field"><label>FEE KESEPAKATAN RP</label><input class="exCustomFee" type="text" inputmode="numeric" value="${valFee}" oninput="saveJastipState()"></div>
+      </div>
+    `;
+  } else {
+    const valNama = existingData ? existingData.nama : '';
+    const valBarang = existingData ? existingData.barang : '20000';
+    const valFee = existingData ? existingData.fee : '2000';
+    blockHtml = `
+      <div class="extra-block" id="extra-${extraId}" data-type="jastip">
+        <div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">🛍️ + JASTIP TAMBAHAN</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div>
+        <div class="field mb-2"><label>NAMA TOKO / BARANG BELANJA</label><input class="exJastipNama" value="${valNama}" placeholder="Contoh: Beli Kopi" oninput="saveJastipState()"></div>
+        <div class="flex" style="gap:8px;">
+          <div class="field"><label>TOTAL BARANG RP</label><input class="exJastipBarang" type="text" inputmode="numeric" value="${valBarang}" oninput="saveJastipState()"></div>
+          <div class="field"><label>FEE JASTIP RP</label><input class="exJastipFee" type="text" inputmode="numeric" value="${valFee}" oninput="saveJastipState()"></div>
+        </div>
+      </div>
+    `;
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = blockHtml;
+  targetBox.appendChild(wrapper.firstElementChild);
+  if (triggerSave) {
+    saveJastipState();
+    alert("Layanan berhasil digabungkan!");
+  }
+}
+
+function removeExtraService(id) { 
+  const el = document.getElementById('extra-' + id); 
+  if (el) el.remove(); 
+  saveJastipState();
+}
+
+function kumpulkanJasaTambahanHTML(targetPage) {
+  let html = ""; let extraBiayaTotal = 0; let extraFeeDriver = 0; let extraFeeCount = 0;
+  const container = document.getElementById(targetPage + 'ExtraServices');
+  if (!container) return { html, extraBiayaTotal, extraFeeDriver, extraFeeCount };
+
+  container.querySelectorAll('.extra-block').forEach((block) => {
+    const type = block.getAttribute('data-type');
+    if (type === 'ambil') {
+      const nama = block.querySelector('.exAmbilNama').value || 'Ambil Barang'; 
+      const fee = parseInt(block.querySelector('.exAmbilFee').value || 0);
+      html += `<div style="font-weight:bold; margin-top:8px;">📦 JASA AMBIL BARANG</div>`;
+      html += `<div class="receipt-flex-between"><span>- Barang: ${nama}</span><span>Rp ${fee.toLocaleString('id-ID')}</span></div>`;
+      extraBiayaTotal += fee; extraFeeDriver += fee;
+      if (fee > 0) extraFeeCount++;
+    } else if (type === 'ojek') {
+      const rute = block.querySelector('.exOjekRute').value || 'Rute Tambahan'; 
+      const ongkir = parseInt(block.querySelector('.exOjekOngkir').value || 0);
+      html += `<div style="font-weight:bold; margin-top:8px;">🏍️ OJEK PANGGILAN TAMBAHAN</div>`;
+      html += `<div class="receipt-flex-between"><span>- Rute: ${rute}</span><span>Rp ${ongkir.toLocaleString('id-ID')}</span></div>`;
+      extraBiayaTotal += ongkir; extraFeeDriver += ongkir;
+      if (ongkir > 0) extraFeeCount++;
+    } else if (type === 'custom') {
+      const desc = block.querySelector('.exCustomDesc').value || 'Tugas Khusus'; 
+      const fee = parseInt(block.querySelector('.exCustomFee').value || 0);
+      html += `<div style="font-weight:bold; margin-top:8px;">⭐ TUGAS CUSTOM TAMBAHAN</div>`;
+      html += `<div class="receipt-flex-between"><span>- Tugas: ${desc}</span><span>Rp ${fee.toLocaleString('id-ID')}</span></div>`;
+      extraBiayaTotal += fee; extraFeeDriver += fee;
+      if (fee > 0) extraFeeCount++;
+    } else if (type === 'jastip') {
+      const nama = block.querySelector('.exJastipNama').value || 'Toko Lain'; 
+      const brg = parseInt(block.querySelector('.exJastipBarang').value || 0); 
+      const fee = parseInt(block.querySelector('.exJastipFee').value || 0);
+      html += `<div style="font-weight:bold; margin-top:8px;">🛍️ JASTIP TAMBAHAN</div>`;
+      html += `<div class="receipt-flex-between"><span>- Titip: ${nama}</span><span>Rp ${brg.toLocaleString('id-ID')}</span></div>`;
+      html += `<div class="receipt-flex-between" style="color:#334155;"><span>&nbsp;&nbsp;Fee Penanganan</span><span>Rp ${fee.toLocaleString('id-ID')}</span></div>`;
+      extraBiayaTotal += (brg + fee); extraFeeDriver += fee;
+      if (fee > 0) extraFeeCount++;
+    }
+  });
+  return { html, extraBiayaTotal, extraFeeDriver, extraFeeCount };
+}
+
+function buildReceiptBaseHTML(jenisStruk, lotCode, contentHtml, totalBayarStr, payMethod) {
+  const tglWaktu = new Date().toLocaleString('id-ID');
+  return `
+    <div class="receipt-paper" id="receipt-print-area">
+      <div style="text-align:center; font-weight:900; font-size:20px; letter-spacing:1px;">NEXT LEVEL</div>
+      <div style="text-align:center; font-size:8.5px; font-weight:800; margin-top:3px; color:#222; text-transform:uppercase; line-height:1.35;">
+        JASTIP ON THE SPOT — AMBIL PESANAN<br>OJEK PANGGILAN — ORDERAN KHUSUS
+      </div>
+      <div style="text-align:center; font-size:10px; font-weight:800; margin-top:4px; text-transform:uppercase;">
+        NOTA RESMI DRIVER / BUKTI TAGIHAN
+      </div>
+      <div class="receipt-dashed-line"></div>
+      <table class="receipt-table">
+        <tr><td style="width: 85px;">LOT No</td><td>: ${lotCode}</td></tr>
+        <tr><td>Nama Driver</td><td>: ${driverData.driver}</td></tr>
+        <tr><td>Motor / Plat</td><td>: ${driverData.motor}</td></tr>
+        <tr><td>Tgl & Waktu</td><td>: ${tglWaktu}</td></tr>
+        <tr><td>Metode Bayar</td><td>: <b>${payMethod || 'TUNAI (COD)'}</b></td></tr>
+        <tr><td>Bank Driver</td><td>: ${driverData.bank} - ${driverData.rek}<br>&nbsp;&nbsp;a/n ${driverData.an}</td></tr>
+      </table>
+      <div class="receipt-dashed-line"></div>
+      
+      <div style="font-weight:900; font-size:11px; text-transform:uppercase; margin-bottom:4px;">RINCIAN BIAYA & PESANAN:</div>
+      ${contentHtml}
+
+      <div class="receipt-dashed-line"></div>
+      <div class="receipt-flex-between" style="font-weight:900; font-size:14px;">
+        <span>GRAND TOTAL</span>
+        <span>Rp ${totalBayarStr}</span>
+      </div>
+
+      <div class="receipt-dashed-line"></div>
+      <div style="text-align:center; font-weight:bold; font-size:12px; margin-top:8px;">TERIMA KASIH BANYAK</div>
+      <div style="text-align:center; font-size:9px; margin-top:4px; font-weight:700;">Atas kepercayaannya menggunakan jasa NEXT LEVEL<br>Barang telah diperiksa & diterima sesuai pesanan<br>Simpan nota ini sebagai bukti pembayaran yang sah<br>Konfirmasi & Komplain: WA 0889-7132-0461</div>
+      <div style="text-align:center; font-size:8px; margin-top:8px; font-style:italic;">*Nota dicetak otomatis pada ${tglWaktu} - NEXT LEVEL*</div>
+    </div>
+  `;
+}
+
+// BUAT BILL JASTIP
+function buatBillJastip() {
+  if (isSetoranLocked()) { alertSetoranLocked(); openPageDriver('home'); return; }
+  if (!driverData.saved) { alert("Lengkapi data profil Driver di Halaman Utama!"); openPageDriver('home'); return; }
+  const jarak = parseFloat(document.getElementById('jJarak').value || 0); 
+  const tunggu = parseInt(document.getElementById('jTunggu').value || 0); 
+  const parkir = parseInt(document.getElementById('jParkir').value || 0); 
+  const sepakat = parseInt(document.getElementById('jSepakat').value || 0);
+  const ongkir = getOngkir(jarak); 
+  const uangTunggu = getTunggu(tunggu);
+  
+  let totalBarang = 0, totalFee = 0, rincianHtml = "";
+  let feeItemCount = 0;
+  
+  document.querySelectorAll('#jastipLokasi .lokasiBox').forEach((box, i) => {
+    const toko = box.querySelector('.jNama').value || `Warung ${i + 1}`;
+    rincianHtml += `<div style="font-weight:bold; margin-top:8px; text-transform:uppercase;">LOKASI ${i+1}: ${toko}</div>`;
+    box.querySelectorAll('.prodCardBox').forEach(r => {
+      const nm = r.querySelector('.dNama').value || 'Produk Jastip'; 
+      const q = parseInt(r.querySelector('.dJml').value || 0); 
+      const h = parseInt(r.querySelector('.dHarga').value || 0); 
+      
+      const feeEl = r.querySelector('.feeVal');
+      let feeVal = parseInt(feeEl.getAttribute('data-fee') || '0');
+      if (isNaN(feeVal) || feeVal === 0) {
+        let txt = feeEl.innerText.trim();
+        if (txt.toUpperCase().endsWith('K')) {
+          feeVal = parseFloat(txt) * 1000;
+        } else {
+          feeVal = parseInt(txt.replace(/[^0-9]/g, '') || 0);
+        }
+      }
+
+      totalBarang += (h * q); 
+      totalFee += feeVal;
+      if (feeVal > 0) feeItemCount++;
+
+      rincianHtml += `
+        <div class="receipt-flex-between">
+          <span style="padding-right:8px;">- ${nm} (${q}x)</span>
+          <span style="white-space:nowrap;">Rp ${(h*q).toLocaleString('id-ID')}</span>
+        </div>
+        <div style="font-size:9px; padding-left:8px; margin-bottom:4px;">(Fee: ${formatFeeKVal(feeVal)})</div>
+      `;
+    });
+  });
+
+  const extra = kumpulkanJasaTambahanHTML('jastip');
+  if (uangTunggu > 0) feeItemCount++;
+  if (sepakat > 0) feeItemCount++;
+  feeItemCount += extra.extraFeeCount;
+
+  driverData.lot += 1;
+  driverData.k += 2000;
+  driverData.a += 1000;
+  const fTambahan = hitungKonversiF(feeItemCount);
+  driverData.f += fTambahan;
+  driverData.t = driverData.k + driverData.a + driverData.f;
+
+  const totalBayar = totalBarang + totalFee + ongkir + uangTunggu + parkir + sepakat + extra.extraBiayaTotal + 1000;
+  const incThisOrder = (ongkir + totalFee + sepakat + uangTunggu + extra.extraFeeDriver);
+  accumulatedDriverIncome += incThisOrder;
+
+  syncDriverToFormAndStorage();
+
+  const lotCode = `NL.${driverData.tgl}.${driverData.lot}.J-K.${driverData.k}-A.${driverData.a}-F.${driverData.f}-T.${driverData.t}`;
+
+  let biayaHtml = `
+    <div class="receipt-dashed-line"></div>
+    <div class="receipt-flex-between" style="font-weight:bold;"><span>Subtotal Barang</span><span>Rp ${totalBarang.toLocaleString('id-ID')}</span></div>
+    <div class="receipt-flex-between"><span>Fee Jastip (Penanganan)</span><span>Rp ${totalFee.toLocaleString('id-ID')} (${formatFeeKVal(totalFee)})</span></div>
+    <div class="receipt-flex-between"><span>Ongkos Kirim (${jarak} km)</span><span>Rp ${ongkir.toLocaleString('id-ID')}</span></div>
+    <div class="receipt-flex-between"><span>Biaya Parkir</span><span>${parkir > 0 ? 'Rp ' + parkir.toLocaleString('id-ID') : '-'}</span></div>
+    <div class="receipt-flex-between"><span>Uang Tunggu (${tunggu} Menit)</span><span>${tunggu > 0 ? 'Rp ' + uangTunggu.toLocaleString('id-ID') : '-'}</span></div>
+    <div class="receipt-flex-between"><span>Fee Kesepakatan</span><span>${sepakat > 0 ? 'Rp ' + sepakat.toLocaleString('id-ID') : '-'}</span></div>
+    ${extra.html}
+    <div class="receipt-flex-between"><span>Biaya Admin</span><span>Rp 1.000</span></div>
+  `;
+  const finalBillHTML = buildReceiptBaseHTML("JASTIP ON THE SPOT", lotCode, rincianHtml + biayaHtml, totalBayar.toLocaleString('id-ID'), currentPaymentMethod);
+  catatKeBukuKas("Jastip Belanja", incThisOrder, driverData.t, `Ongkir + Fee Rp ${totalFee.toLocaleString('id-ID')}`, finalBillHTML, lotCode);
+  updateFinancialDashboard(); 
+  
+  lastGeneratedBillMeta = {
+    service: "Jastip Belanja",
+    lotCode: lotCode,
+    grandTotal: totalBayar.toLocaleString('id-ID'),
+    incomeDriver: incThisOrder.toLocaleString('id-ID'),
+    setoranT: driverData.t.toLocaleString('id-ID'),
+    payMethod: currentPaymentMethod
+  };
+
+  localStorage.removeItem('nl_jastip_draft');
+  activeBillServiceSource = 'jastip'; 
+  tampilkanBill(finalBillHTML, "BILL STRUK GABUNGAN", false);
+}
+
+// BUAT BILL OJEK
+function buatBillOjek() {
+  if (isSetoranLocked()) { alertSetoranLocked(); openPageDriver('home'); return; }
+  if (!driverData.saved) { alert("Lengkapi profil driver!"); openPageDriver('home'); return; }
+  const jarak = parseFloat(document.getElementById('oJarak').value || 0);
+  const ongkir = getOngkir(jarak); 
+  const extra = kumpulkanJasaTambahanHTML('ojek');
+  
+  driverData.lot += 1; 
+  driverData.k += 2000; 
+  driverData.a += 1000; 
+  const fTambahan = hitungKonversiF(extra.extraFeeCount);
+  driverData.f += fTambahan;
+  driverData.t = driverData.k + driverData.a + driverData.f;
+
+  const totalBayar = ongkir + extra.extraBiayaTotal + 1000; 
+  const incThisOrder = (ongkir + extra.extraFeeDriver);
+  accumulatedDriverIncome += incThisOrder;
+
+  syncDriverToFormAndStorage();
+
+  const lotCode = `NL.${driverData.tgl}.${driverData.lot}.O-K.${driverData.k}-A.${driverData.a}-F.${driverData.f}-T.${driverData.t}`;
+  let biayaHtml = `
+    <div class="receipt-flex-between"><span>Ongkos Ojek (${jarak} km)</span><span>Rp ${ongkir.toLocaleString('id-ID')}</span></div>
+    <div class="receipt-flex-between"><span>Biaya Parkir</span><span>-</span></div>
+    <div class="receipt-flex-between"><span>Uang Tunggu (0 Menit)</span><span>-</span></div>
+    <div class="receipt-flex-between"><span>Fee Kesepakatan</span><span>-</span></div>
+    ${extra.html}
+    <div class="receipt-flex-between"><span>Biaya Admin</span><span>Rp 1.000</span></div>
+  `;
+  const finalBillHTML = buildReceiptBaseHTML("OJEK PANGGILAN", lotCode, biayaHtml, totalBayar.toLocaleString('id-ID'), "TUNAI (COD)");
+  catatKeBukuKas("Ojek Panggilan", incThisOrder, driverData.t, `Ongkir Ojek ${jarak} KM`, finalBillHTML, lotCode);
+  updateFinancialDashboard(); 
+  
+  lastGeneratedBillMeta = {
+    service: "Ojek Panggilan",
+    lotCode: lotCode,
+    grandTotal: totalBayar.toLocaleString('id-ID'),
+    incomeDriver: incThisOrder.toLocaleString('id-ID'),
+    setoranT: driverData.t.toLocaleString('id-ID'),
+    payMethod: "TUNAI (COD)"
+  };
+
+  localStorage.removeItem('nl_ojek_draft');
+  activeBillServiceSource = 'ojek'; 
+  tampilkanBill(finalBillHTML, "BILL OJEK PANGGILAN", false);
+}
+
+// BUAT BILL AMBIL PESANAN
+function buatBillAmbil() {
+  if (isSetoranLocked()) { alertSetoranLocked(); openPageDriver('home'); return; }
+  if (!driverData.saved) { alert("Lengkapi profil driver!"); openPageDriver('home'); return; }
+  const jarak = parseFloat(document.getElementById('aJarak').value || 0); 
+  const parkir = parseInt(document.getElementById('aParkir').value || 0);
+  let rincianHtml = ""; let lokJml = 0;
+  
+  document.querySelectorAll('#ambilLokasi .lokasiBox').forEach((box, i) => { 
+    lokJml++; 
+    const aNama = box.querySelector('.aNama').value || `Lokasi Pengambilan ${i + 1}`; 
+    rincianHtml += `<div class="receipt-flex-between"><span>- ${aNama}</span><span>(Lunas)</span></div>`; 
+  });
+  
+  const feeAmbil = lokJml * 2000; 
+  const ongkir = getOngkir(jarak); 
+  const extra = kumpulkanJasaTambahanHTML('ambil');
+
+  driverData.lot += 1; 
+  driverData.k += 2000; 
+  driverData.a += 1000; 
+  const fTambahan = hitungKonversiF(lokJml + extra.extraFeeCount);
+  driverData.f += fTambahan;
+  driverData.t = driverData.k + driverData.a + driverData.f;
+
+  const totalBayar = ongkir + feeAmbil + parkir + extra.extraBiayaTotal + 1000; 
+  const incThisOrder = (ongkir + feeAmbil + extra.extraFeeDriver);
+  accumulatedDriverIncome += incThisOrder;
+
+  syncDriverToFormAndStorage();
+
+  const lotCode = `NL.${driverData.tgl}.${driverData.lot}.A-K.${driverData.k}-A.${driverData.a}-F.${driverData.f}-T.${driverData.t}`;
+  let biayaHtml = `
+    <div class="receipt-dashed-line"></div>
+    <div class="receipt-flex-between"><span>Fee Pengambilan (${lokJml} Titik)</span><span>Rp ${feeAmbil.toLocaleString('id-ID')}</span></div>
+    <div class="receipt-flex-between"><span>Ongkos Kirim (${jarak} km)</span><span>Rp ${ongkir.toLocaleString('id-ID')}</span></div>
+    <div class="receipt-flex-between"><span>Biaya Parkir</span><span>${parkir > 0 ? 'Rp ' + parkir.toLocaleString('id-ID') : '-'}</span></div>
+    <div class="receipt-flex-between"><span>Uang Tunggu (0 Menit)</span><span>-</span></div>
+    <div class="receipt-flex-between"><span>Fee Kesepakatan</span><span>-</span></div>
+    ${extra.html}
+    <div class="receipt-flex-between"><span>Biaya Admin</span><span>Rp 1.000</span></div>
+  `;
+  const finalBillHTML = buildReceiptBaseHTML("AMBIL PESANAN LUNAS", lotCode, rincianHtml + biayaHtml, totalBayar.toLocaleString('id-ID'), "TUNAI (COD)");
+  catatKeBukuKas("Ambil Pesanan", incThisOrder, driverData.t, `Fee Ambil + Ongkir`, finalBillHTML, lotCode);
+  updateFinancialDashboard(); 
+  
+  lastGeneratedBillMeta = {
+    service: "Ambil Pesanan Lunas",
+    lotCode: lotCode,
+    grandTotal: totalBayar.toLocaleString('id-ID'),
+    incomeDriver: incThisOrder.toLocaleString('id-ID'),
+    setoranT: driverData.t.toLocaleString('id-ID'),
+    payMethod: "TUNAI (COD)"
+  };
+
+  localStorage.removeItem('nl_ambil_draft');
+  activeBillServiceSource = 'ambil'; 
+  tampilkanBill(finalBillHTML, "BILL AMBIL BARANG", false);
+}
+
+// BUAT BILL CUSTOM
+function buatBillCustom() {
+  if (isSetoranLocked()) { alertSetoranLocked(); openPageDriver('home'); return; }
+  if (!driverData.saved) { alert("Lengkapi profil driver!"); openPageDriver('home'); return; }
+  const desc = document.getElementById('cDeskripsi').value || "Tugas Custom / Khusus"; 
+  const jarak = parseFloat(document.getElementById('cJarak').value || 0); 
+  const sepakat = parseInt(document.getElementById('cSepakat').value || 0); 
+  const parkir = parseInt(document.getElementById('cParkir').value || 0); 
+  const tunggu = parseInt(document.getElementById('cTunggu').value || 0);
+  const ongkir = getOngkir(jarak); 
+  const uangTunggu = getTunggu(tunggu); 
+  const extra = kumpulkanJasaTambahanHTML('custom');
+
+  let feeCount = 0;
+  if (sepakat > 0) feeCount++;
+  if (uangTunggu > 0) feeCount++;
+  feeCount += extra.extraFeeCount;
+
+  driverData.lot += 1; 
+  driverData.k += 2000; 
+  driverData.a += 1000; 
+  const fTambahan = hitungKonversiF(feeCount);
+  driverData.f += fTambahan;
+  driverData.t = driverData.k + driverData.a + driverData.f;
+
+  const totalBayar = ongkir + sepakat + parkir + uangTunggu + extra.extraBiayaTotal + 1000; 
+  const incThisOrder = (ongkir + sepakat + uangTunggu + extra.extraFeeDriver);
+  accumulatedDriverIncome += incThisOrder;
+
+  syncDriverToFormAndStorage();
+
+  const lotCode = `NL.${driverData.tgl}.${driverData.lot}.C-K.${driverData.k}-A.${driverData.a}-F.${driverData.f}-T.${driverData.t}`;
+  let rincianHtml = `<div style="font-weight:bold; margin-bottom:8px;">TUGAS: ${desc}</div>`;
+  let biayaHtml = `
+    <div class="receipt-dashed-line"></div>
+    <div class="receipt-flex-between"><span>Fee Kesepakatan Jasa</span><span>${sepakat > 0 ? 'Rp ' + sepakat.toLocaleString('id-ID') : '-'}</span></div>
+    <div class="receipt-flex-between"><span>Ongkos Kirim (${jarak} km)</span><span>Rp ${ongkir.toLocaleString('id-ID')}</span></div>
+    <div class="receipt-flex-between"><span>Biaya Parkir</span><span>${parkir > 0 ? 'Rp ' + parkir.toLocaleString('id-ID') : '-'}</span></div>
+    <div class="receipt-flex-between"><span>Uang Tunggu (${tunggu} Menit)</span><span>${tunggu > 0 ? 'Rp ' + uangTunggu.toLocaleString('id-ID') : '-'}</span></div>
+    ${extra.html}
+    <div class="receipt-flex-between"><span>Biaya Admin</span><span>Rp 1.000</span></div>
+  `;
+  const finalBillHTML = buildReceiptBaseHTML("ORDERAN CUSTOM KHUSUS", lotCode, rincianHtml + biayaHtml, totalBayar.toLocaleString('id-ID'), "TUNAI (COD)");
+  catatKeBukuKas("Custom Khusus", incThisOrder, driverData.t, `Fee Kesepakatan + Ongkos`, finalBillHTML, lotCode);
+  updateFinancialDashboard(); 
+  
+  lastGeneratedBillMeta = {
+    service: "Custom Khusus",
+    lotCode: lotCode,
+    grandTotal: totalBayar.toLocaleString('id-ID'),
+    incomeDriver: incThisOrder.toLocaleString('id-ID'),
+    setoranT: driverData.t.toLocaleString('id-ID'),
+    payMethod: "TUNAI (COD)"
+  };
+
+  localStorage.removeItem('nl_custom_draft');
+  activeBillServiceSource = 'custom'; 
+  tampilkanBill(finalBillHTML, "BILL TUGAS CUSTOM", false);
+}
+
+function tampilkanBill(htmlString, title, isReviewOnly = false) {
+  document.getElementById('billTitle').innerText = isReviewOnly ? `🔍 REVIEW: ${title}` : title;
+  document.getElementById('billTextFull').innerHTML = htmlString;
+  
+  const actionBtn = document.getElementById('btnDownloadAndSendWA');
+  if (isReviewOnly) { actionBtn.classList.add('hidden'); } else { actionBtn.classList.remove('hidden'); }
+  document.getElementById('billPage').classList.add('open');
+}
+
+function downloadBillDanLaporWA() {
+  const receiptEl = document.getElementById('receipt-print-area');
+  if (!receiptEl) return;
+  const btn = document.getElementById('btnDownloadAndSendWA');
+  const oriText = btn.innerText; 
+  btn.innerText = "⏳ MEMPROSES...";
+
+  html2canvas(receiptEl, { scale: 2, backgroundColor: '#ffffff' }).then(canvas => {
+    const imgData = canvas.toDataURL('image/jpeg', 0.9);
+    const link = document.createElement('a'); 
+    link.href = imgData; 
+    link.download = `Struk_NextLevel_${Date.now()}.jpg`;
+    document.body.appendChild(link); 
+    link.click(); 
+    document.body.removeChild(link);
+
+    btn.innerText = oriText;
+
+    const meta = lastGeneratedBillMeta || {
+      service: "Order Selesai",
+      lotCode: `NL.${driverData.tgl}.${driverData.lot}`,
+      grandTotal: "-",
+      incomeDriver: "-",
+      setoranT: (driverData.t || 0).toLocaleString('id-ID'),
+      payMethod: currentPaymentMethod
+    };
+
+    const waMsg = 
+`🧾 *LAPORAN STRUK SELESAI NEXT LEVEL* 🧾
+═════════════════════════
+👤 *Driver:* ${driverData.driver} (${driverData.motor})
+📥 *No. LOT:* ${meta.lotCode}
+🛍️ *Layanan:* ${meta.service}
+💵 *Grand Total Tagihan:* Rp ${meta.grandTotal} (${meta.payMethod})
+🛵 *Pendapatan Driver:* +Rp ${meta.incomeDriver}
+📊 *Akumulasi Setoran Wajib (T):* *Rp ${meta.setoranT}*
+═════════════════════════
+
+_Struk nota resmi telah otomatis ter-download ke galeri saya dan dilampirkan bersama pesan ini ke Admin._ 🙏`;
+
+    const waUrl = `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(waMsg)}`;
+    
+    setTimeout(() => {
+      window.open(waUrl, '_blank');
+    }, 400);
+
+  }).catch(err => { 
+    btn.innerText = oriText; 
+    alert("Gagal memproses gambar struk."); 
+  });
+}
+
+function closeBill() { 
+  document.getElementById('billPage').classList.remove('open'); 
+  if (activeBillServiceSource) { 
+    resetFormService(activeBillServiceSource); 
+    activeBillServiceSource = ''; 
+  }
+}
+
+function resetFormService(serviceType) {
+  if (serviceType === 'jastip') {
+    jastipId = 0;
+    const box = document.getElementById('jastipLokasi'); if (box) box.innerHTML = '';
+    const extra = document.getElementById('jastipExtraServices'); if (extra) extra.innerHTML = '';
+    document.getElementById('jJarak').value = '1'; document.getElementById('jTunggu').value = '0'; document.getElementById('jParkir').value = '0'; document.getElementById('jSepakat').value = '0';
+    localStorage.removeItem('nl_jastip_draft');
+    addJastipLokasi();
+  } else if (serviceType === 'ojek') {
+    document.getElementById('oJarak').value = '1';
+    const extra = document.getElementById('ojekExtraServices'); if (extra) extra.innerHTML = '';
+    localStorage.removeItem('nl_ojek_draft');
+  } else if (serviceType === 'ambil') {
+    ambilId = 0;
+    const box = document.getElementById('ambilLokasi'); if (box) box.innerHTML = '';
+    const extra = document.getElementById('ambilExtraServices'); if (extra) extra.innerHTML = '';
+    document.getElementById('aJarak').value = '1'; document.getElementById('aParkir').value = '0';
+    localStorage.removeItem('nl_ambil_draft');
+    addAmbilLokasi();
+  } else if (serviceType === 'custom') {
+    document.getElementById('cDeskripsi').value = ''; document.getElementById('cJarak').value = '1'; document.getElementById('cSepakat').value = '0'; document.getElementById('cParkir').value = '0'; document.getElementById('cTunggu').value = '0';
+    const extra = document.getElementById('customExtraServices'); if (extra) extra.innerHTML = '';
+    localStorage.removeItem('nl_custom_draft');
+  }
+}
+
+function generateBillHTML_Dispatch(title, incDriver, addT, lotCode) {
+  const htmlContent = `
+    <div style="font-weight:bold; font-size:11px; margin-bottom:4px;">PESANAN: ${title}</div>
+    <div class="receipt-dashed-line"></div>
+    <div class="receipt-flex-between"><span>Pendapatan Driver</span><span style="color:#059669; font-weight:bold;">+ Rp ${incDriver.toLocaleString('id-ID')}</span></div>
+    <div class="receipt-flex-between"><span>Setoran T Wajib (Akumulasi)</span><span style="color:#d97706; font-weight:bold;">Rp ${addT.toLocaleString('id-ID')}</span></div>
+  `;
+  return buildReceiptBaseHTML("ORDER DISPATCH DITERIMA", lotCode, htmlContent, "0", "TUNAI (COD)");
+}
+
+window.onload = function() {
+  document.getElementById('fTgl').value = getTodayDDMMYY();
+
+  checkAutoExpiry30Hari();
+
+  const savedDriver = localStorage.getItem('nl_driver_data');
+  if (savedDriver) {
+    try {
+      driverData = JSON.parse(savedDriver);
+      if (driverData.saved) {
+        document.getElementById('fDriver').value = driverData.driver || '';
+        document.getElementById('fMotor').value = driverData.motor || '';
+        document.getElementById('fBank').value = driverData.bank || '';
+        document.getElementById('fRek').value = driverData.rek || '';
+        document.getElementById('fAn').value = driverData.an || '';
+        document.getElementById('fLot').value = driverData.lot || 0;
+        document.getElementById('fK').value = driverData.k || 0;
+        document.getElementById('fA').value = driverData.a || 0;
+        document.getElementById('fF').value = driverData.f || 0;
+        document.getElementById('fT').value = driverData.t || 0;
+        document.getElementById('fTgl').value = driverData.tgl || getTodayDDMMYY();
+
+        document.getElementById('formCard').classList.add('hidden');
+        document.getElementById('haloBox').classList.remove('hidden');
+        document.getElementById('haloName').innerText = driverData.driver;
+      }
+    } catch(e) {}
+  }
+
+  const savedIncome = localStorage.getItem('nl_driver_income');
+  if (savedIncome) accumulatedDriverIncome = parseInt(savedIncome) || 0;
+
+  const savedOrders = localStorage.getItem('nl_income_book');
+  if (savedOrders) {
+    try { orderIncomeBook = JSON.parse(savedOrders); } catch(e) {}
+  }
+
+  updateFinancialDashboard();
+  checkLockRule();
+
+  const isRegistered = localStorage.getItem('nl_is_registered') === 'true';
+  const hasPassword = !!localStorage.getItem('nl_driver_password');
+  const isSessionUnlocked = sessionStorage.getItem('nl_session_unlocked') === 'true';
+
+  if (isRegistered) {
+    if (hasPassword && !isSessionUnlocked) {
+      switchMainScreen('screen-login', false);
+    } else {
+      const savedScreen = localStorage.getItem('nl_active_screen') || 'screen-driver';
+      const savedDriverPage = localStorage.getItem('nl_active_driver_page') || 'home';
+      switchMainScreen(savedScreen, false);
+      if (savedScreen === 'screen-driver') {
+        openPageDriver(savedDriverPage, false);
+      }
+    }
+  } else {
+    switchMainScreen('screen-landing', false);
+  }
+
+  // Pemicu otomatis alarm jika terdapat antrean pesanan yang belum diambil
+  const listAntrean = chatOrderDatabase.filter(c => c.status === 'antrean');
+  if (listAntrean.length > 0) {
+    setTimeout(() => {
+      mulaiAlarmOrderan();
+    }, 1200);
+
+    // Buka akses izin audio browser pada sentuhan layar pertama
+    const listenerSentuhanAwal = function() {
+      if (!isAlarmRunning && chatOrderDatabase.some(c => c.status === 'antrean')) {
+        mulaiAlarmOrderan();
+      }
+      document.removeEventListener('click', listenerSentuhanAwal);
+      document.removeEventListener('touchstart', listenerSentuhanAwal);
+    };
+    document.addEventListener('click', listenerSentuhanAwal);
+    document.addEventListener('touchstart', listenerSentuhanAwal);
+  }
+};
+</script>
+<!-- ================= SCRIPT KONEKSI FIREBASE RESMI NEXT LEVEL ================= -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+  // 1. Kunci Konfigurasi Firebase Resmi Anda
+  const firebaseConfig = {
+    apiKey: "AIzaSyBom74t2rJgZAyBzTeNfAzCn-sjUOo5RiA",
+    authDomain: "nextlevel-chat.firebaseapp.com",
+    databaseURL: "https://nextlevel-chat-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "nextlevel-chat",
+    storageBucket: "nextlevel-chat.firebasestorage.app",
+    messagingSenderId: "746627471179",
+    appId: "1:746627471179:web:57755e101e5edb0058bace"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // 2. Menerima Pesanan Baru Masuk dari Customer Secara Realtime
+  db.ref("chat_orders").on("child_added", (snapshot) => {
+    const data = snapshot.val();
+    const id = snapshot.key;
+    if (!data) return;
+
+    let existing = chatOrderDatabase.find(o => o.id === id);
+    if (!existing) {
+      let historyArr = [];
+      if (data.messages) {
+        Object.values(data.messages).forEach(m => {
+          historyArr.push({
+            sender: m.sender || 'customer',
+            text: m.text || '',
+            time: m.time || '',
+            media: m.media || null
+          });
+        });
+      } else if (Array.isArray(data.history)) {
+        historyArr = data.history;
+      }
+
+      chatOrderDatabase.unshift({
+        id: id,
+        customerName: data.customerName || "Pelanggan Baru",
+        phone: data.phone || "-",
+        service: data.service || "Jastip / Belanja",
+        serviceIcon: data.serviceIcon || "🛍️",
+        status: data.status || "antrean",
+        lastMessage: data.lastMessage || (historyArr.length > 0 ? historyArr[historyArr.length - 1].text : "Pesanan baru masuk"),
+        time: data.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        history: historyArr
+      });
+
+      renderChatInbox();
+      mainkanSuaraOrderanBaru();
+    }
+  });
+
+  // 3. Otomatis Kirim Balasan Bot Saat Driver Klik "Ambil Pesanan"
+  const ori_prosesAmbilPesananResmi = prosesAmbilPesananResmi;
+  prosesAmbilPesananResmi = function(orderId) {
+    ori_prosesAmbilPesananResmi(orderId);
+
+    const namaDriver = (driverData && driverData.driver) ? driverData.driver : "Mitra Driver";
+    const motorDriver = (driverData && driverData.motor) ? driverData.motor : "";
+    const jam = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const pesanBot = "Kabar baik Kak! Pesanan Anda telah diambil oleh Driver " + namaDriver + (motorDriver ? " (" + motorDriver + ")" : "") + ". Driver sedang membaca detail pesanan Anda. 🙏🛵";
+
+    db.ref("chat_orders/" + orderId).update({
+      status: "aktif",
+      driverName: namaDriver,
+      driverMotor: motorDriver,
+      lastMessage: pesanBot
+    });
+
+    db.ref("chat_orders/" + orderId + "/messages").push({
+      sender: "driver",
+      text: pesanBot,
+      time: jam
+    });
+  };
+
+  // 4. Otomatis Kirim Chat Driver ke Database Realtime
+  const ori_kirimPesanDriver = kirimPesanDriver;
+  kirimPesanDriver = function() {
+    if (activeChatOrder) {
+      const inp = document.getElementById('driverChatTextInput');
+      const txt = inp ? inp.value.trim() : '';
+      if (txt) {
+        const jam = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        db.ref("chat_orders/" + activeChatOrder.id).update({
+          lastMessage: txt
+        });
+        db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({
+          sender: "driver",
+          text: txt,
+          time: jam
+        });
+      }
+    }
+    ori_kirimPesanDriver();
+  };
+
+  // 5. Sambungkan Ruang Obrolan Agar Chat Pelanggan Masuk Otomatis ke Layar Driver
+  let currentChatListenerRef = null;
+  const ori_bukaChatLangsung = bukaChatLangsung;
+  bukaChatLangsung = function(orderId, isBaruDiambil = false) {
+    ori_bukaChatLangsung(orderId, isBaruDiambil);
+
+    if (currentChatListenerRef) {
+      currentChatListenerRef.off();
+    }
+
+    currentChatListenerRef = db.ref("chat_orders/" + orderId + "/messages");
+    currentChatListenerRef.on("child_added", (snapshot) => {
+      const msg = snapshot.val();
+      if (activeChatOrder && activeChatOrder.id === orderId && msg) {
+        const sudahAda = activeChatOrder.history.some(m => m.text === msg.text && m.sender === msg.sender && (m.time === msg.time || !m.time));
+        if (!sudahAda) {
+          activeChatOrder.history.push({
+            sender: msg.sender || "customer",
+            text: msg.text || "",
+            time: msg.time || "Baru saja",
+            media: msg.media || null
+          });
+          renderRoomMessages();
+        }
+      }
+    });
+  };
+</script>
+<!-- ================= AKHIR SCRIPT FIREBASE ================= -->
+
+</body>
+  </html>
