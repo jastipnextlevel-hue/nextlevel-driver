@@ -1068,10 +1068,10 @@ html, body {
     <button class="cta-button" style="background:#059669;" onclick="tutupModalNrpDanMasuk()">SAYA SUDAH MENCATATNYA ➔</button>
   </div>
 </div>
+
 <!-- ================= SCRIPT KONEKSI FIREBASE RESMI NEXT LEVEL ================= -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script>
 // ================= 1. INISIALISASI FIREBASE =================
 const firebaseConfig = {
@@ -1261,25 +1261,81 @@ function switchMainScreen(screenId, save = true) {
   }
 }
 
-// ================= 3. REGISTRASI & GENERATOR NRP OTOMATIS =================
-let isVideoVerified = false; let isKtpVerified = false;
-function handleNativeVideoWajah(input) { if (input.files && input.files[0]) { isVideoVerified = true; document.getElementById('videoSuccessBox').classList.remove('hidden'); alert("✅ Rekaman video wajah diterima!"); } }
-function handleNativeKtp(input) { if (input.files && input.files[0]) { isKtpVerified = true; document.getElementById('ktpSuccessBox').classList.remove('hidden'); alert("✅ Foto KTP asli diterima!"); } }
+// ================= 3. REGISTRASI & GENERATOR NRP OTOMATIS (TERHUBUNG KE ADMIN) =================
+let isVideoVerified = false;
+let isKtpVerified = false;
+let uploadedVideoData = "";
+let uploadedKtpData = "";
+
+function handleNativeVideoWajah(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    if (file.size > 12 * 1024 * 1024) {
+      alert("⚠️ Ukuran video terlalu besar (maksimal 12 MB). Silakan rekam singkat 3-4 detik saja saat berkedip 3 kali.");
+      input.value = "";
+      return;
+    }
+    tampilkanLoadingNextLevel(true, "Memproses Video Wajah...", "Sedang menyiapkan rekaman verifikasi Anda");
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      uploadedVideoData = e.target.result;
+      isVideoVerified = true;
+      document.getElementById('videoSuccessBox').classList.remove('hidden');
+      tampilkanLoadingNextLevel(false);
+      alert("✅ Rekaman video wajah diterima!");
+    };
+    reader.onerror = function() {
+      tampilkanLoadingNextLevel(false);
+      alert("❌ Gagal membaca file video. Silakan rekam ulang.");
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function handleNativeKtp(input) {
+  if (input.files && input.files[0]) {
+    tampilkanLoadingNextLevel(true, "Memproses Foto KTP...", "Mengoptimalkan kualitas gambar KTP");
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const maxW = 800;
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        uploadedKtpData = canvas.toDataURL('image/jpeg', 0.75);
+        isKtpVerified = true;
+        document.getElementById('ktpSuccessBox').classList.remove('hidden');
+        tampilkanLoadingNextLevel(false);
+        alert("✅ Foto KTP asli diterima!");
+      };
+      img.onerror = function() {
+        tampilkanLoadingNextLevel(false);
+        alert("❌ Gagal memuat gambar KTP. Silakan foto ulang.");
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
 function goToRegister() { switchMainScreen('screen-register'); }
 function goToLoginScreen() { switchMainScreen('screen-login', false); }
 
 async function finishRegister() {
-  if (!isVideoVerified) { alert("⚠️ Mohon rekam video wajah Anda!"); return; }
-  if (!isKtpVerified) { alert("⚠️ Mohon ambil foto KTP asli Anda!"); return; }
+  if (!isVideoVerified || !uploadedVideoData) { alert("⚠️ Mohon rekam video wajah Anda!"); return; }
+  if (!isKtpVerified || !uploadedKtpData) { alert("⚠️ Mohon ambil foto KTP asli Anda!"); return; }
   const pass = document.getElementById('regPassword').value.trim();
   const passConfirm = document.getElementById('regPasswordConfirm').value.trim();
   if (!pass) { alert("⚠️ Silakan buat Password keamanan Anda!"); return; }
   if (pass !== passConfirm) { alert("⚠️ Konfirmasi password tidak cocok!"); return; }
 
   const btn = document.getElementById('btnSelesaiDaftar');
-  btn.innerText = "⏳ Mohon tunggu sebentar...";
+  btn.innerText = "⏳ Mengunggah berkas & membuat NRP...";
   btn.disabled = true;
-  tampilkanLoadingNextLevel(true, "Mohon tunggu sebentar...", "Sedang membuat NRP & menyiapkan akun Anda");
+  tampilkanLoadingNextLevel(true, "Mengunggah Berkas Verifikasi...", "Sedang mengirim video wajah, KTP & membuat NRP");
 
   const d = new Date();
   const yy = String(d.getFullYear()).slice(-2);
@@ -1293,14 +1349,20 @@ async function finishRegister() {
     const urut = String(result.snapshot.val()).padStart(2, '0');
     const newNrp = prefix + urut;
 
-    await db.ref("drivers/" + newNrp).set({ password: pass, nrp: newNrp, createdAt: Date.now() });
+    await db.ref("drivers/" + newNrp).set({
+      password: pass,
+      nrp: newNrp,
+      videoWajah: uploadedVideoData,
+      fotoKtp: uploadedKtpData,
+      createdAt: Date.now()
+    });
     localStorage.setItem('nl_driver_nrp', newNrp);
     localStorage.setItem('nl_driver_password', pass);
 
     document.getElementById('displayNewNrp').innerText = newNrp;
     document.getElementById('modalNrpSuccess').classList.add('open');
   } catch (error) {
-    alert("❌ Koneksi sedang lambat. Pastikan sinyal stabil dan coba lagi.");
+    alert("❌ Koneksi sedang lambat atau berkas terlalu besar. Pastikan sinyal stabil dan coba lagi.");
   } finally {
     tampilkanLoadingNextLevel(false);
     btn.innerText = "SELESAI & DAPATKAN NRP ➔";
@@ -1441,7 +1503,7 @@ function simpanDataDriverKeFirebase() {
     saved: true, accumulatedDriverIncome: accumulatedDriverIncome || 0,
     orderIncomeBook: orderIncomeBook || [], updatedAt: Date.now()
   };
-  db.ref("drivers/" + nrp).set(payload);
+  db.ref("drivers/" + nrp).update(payload);
 }
 
 function terapkanDataDriverKeUI(data) {
@@ -2516,7 +2578,7 @@ downloadBillDanLaporWA = function() {
   }).catch(err => { btn.innerText = oriText; alert("Gagal memproses gambar struk."); });
 };
 
-// ================= 10. FIREBASE LISTENER & PEMULIHAN SESI SAT-SET (0 DETIK LOADING) =================
+// ================= 10. FIREBASE LISTENER & PEMULIHAN SESI SAT-SET =================
 async function cariDataDriverDiFirebase(nrp) {
   return await ambilDataDriverCepat(nrp);
 }
@@ -2583,9 +2645,9 @@ function jalankanSesiSatSet() {
   }
 
   const savedNrp = localStorage.getItem('nl_driver_nrp');
-  const isUnlocked = localStorage.getItem('nl_session_unlocked')  === 'true'; // Perbaikan sintaksis kecil
+  const isUnlocked = localStorage.getItem('nl_session_unlocked') === 'true';
 
-  if (savedNrp && (localStorage.getItem('nl_session_unlocked') === 'true')) {
+  if (savedNrp && isUnlocked) {
     localStorage.setItem('nl_session_time', Date.now().toString());
     localStorage.setItem('nl_active_screen', 'screen-driver');
 
@@ -2602,7 +2664,7 @@ function jalankanSesiSatSet() {
       if (remoteData && remoteData.saved) terapkanDataDriverKeUI(remoteData);
       else if (driverData && driverData.saved) simpanDataDriverKeFirebase();
     }).catch(() => {});
-  } else if (savedNrp && localStorage.getItem('nl_session_unlocked') !== 'true') {
+  } else if (savedNrp && !isUnlocked) {
     if (document.getElementById('loginNrpInput')) document.getElementById('loginNrpInput').value = savedNrp;
     switchMainScreen('screen-login', false);
   } else {
@@ -2621,4 +2683,4 @@ if (document.readyState === 'loading') {
 window.addEventListener('load', jalankanSesiSatSet);
 </script>
 </body>
-</html>
+        </html>
