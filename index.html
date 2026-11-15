@@ -722,7 +722,6 @@ html, body {
       <button class="cta-button" onclick="verifyLoginPassword()">🔓 MASUK SEKARANG ➔</button>
     </div>
   </section>
-
   <!-- ================= 3. APLIKASI DRIVER & KALKULATOR UTAMA ================= -->
   <section id="screen-driver" class="screen">
     <header class="top-header">
@@ -1575,7 +1574,6 @@ html, body {
     <button class="cta-button" style="background:#059669;" onclick="tutupModalNrpDanMasuk()">SAYA SUDAH MENCATATNYA ➔</button>
   </div>
 </div>
-
 <!-- ================= SCRIPT KONEKSI FIREBASE RESMI NEXT LEVEL ================= -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -1604,6 +1602,8 @@ const MASTER_OWNER_PIN = "7788";
 const LINK_SKEMA_FEE_PRODUK = "https://i.postimg.cc/sDYMhyx2/IMG-20261110-WA0029.jpg";
 const LINK_SKEMA_UANG_TUNGGU = "https://i.postimg.cc/hvFGX3q0/IMG-20261106-WA0020.jpg";
 const LINK_SKEMA_LUAR_AREA = "https://i.postimg.cc/MTtmmRdg/1794318348026.jpg";
+
+let isBillSentToAdmin = false; // VARIABEL GEMBOK KEAMANAN LAPIS KE-3
 
 let chatOrderDatabase = [];
 let isInitialOrdersSynced = false;
@@ -1669,16 +1669,13 @@ function generateNextLevelPngIcon(size) {
   canvas.height = size;
   const ctx = canvas.getContext('2d');
 
-  // Background full square merah gelap agar adaptive icon Android tidak ada pinggiran putih
   ctx.fillStyle = '#7a0f0f';
   ctx.fillRect(0, 0, size, size);
 
   const cx = size / 2;
   const cy = size / 2;
-  // Safe zone 74% dari ukuran agar tidak terpotong maskable circle/squircle
   const radius = size * 0.37;
 
-  // Lingkaran utama logo hitam dengan ring merah & emas
   ctx.beginPath();
   ctx.arc(cx, cy, radius, 0, Math.PI * 2);
   ctx.fillStyle = '#141414';
@@ -1687,7 +1684,6 @@ function generateNextLevelPngIcon(size) {
   ctx.strokeStyle = '#facc15';
   ctx.stroke();
 
-  // Teks miring "Next Level"
   ctx.save();
   ctx.translate(cx, cy);
   ctx.rotate(-14 * Math.PI / 180);
@@ -1698,7 +1694,6 @@ function generateNextLevelPngIcon(size) {
   ctx.fillText('Next', 0, -size * 0.085);
   ctx.fillText('Level', 0, size * 0.095);
 
-  // Garis aksen merah di bawah tulisan
   ctx.beginPath();
   ctx.moveTo(-size * 0.22, size * 0.19);
   ctx.lineTo(size * 0.22, size * 0.19);
@@ -1847,20 +1842,11 @@ let isKtpVerified = false;
 let isSusulanVideoVerified = false;
 let isSusulanKtpVerified = false;
 
-function goToRegister() {
-  switchMainScreen('screen-kebijakan-daftar', false);
-}
-function lanjutKeFormRegistrasi() {
-  switchMainScreen('screen-register', false);
-}
-function batalDaftarKembaliAwal() {
-  switchMainScreen('screen-landing', false);
-}
-function goToLoginScreen() {
-  switchMainScreen('screen-login', false);
-}
+function goToRegister() { switchMainScreen('screen-kebijakan-daftar', false); }
+function lanjutKeFormRegistrasi() { switchMainScreen('screen-register', false); }
+function batalDaftarKembaliAwal() { switchMainScreen('screen-landing', false); }
+function goToLoginScreen() { switchMainScreen('screen-login', false); }
 
-// Kompres gambar KTP sebelum OCR agar cepat & akurat
 function siapkanGambarKtpUntukOcr(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -1868,89 +1854,40 @@ function siapkanGambarKtpUntukOcr(file) {
       const img = new Image();
       img.onload = function() {
         const canvas = document.createElement('canvas');
-        const maxW = 1280;
-        let w = img.width;
-        let h = img.height;
-        if (w > maxW) {
-          h = Math.round((h * maxW) / w);
-          w = maxW;
-        }
-        canvas.width = w;
-        canvas.height = h;
+        const maxW = 1280; let w = img.width; let h = img.height;
+        if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
+        canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, w, h);
         resolve(canvas.toDataURL('image/jpeg', 0.88));
       };
-      img.onerror = reject;
-      img.src = ev.target.result;
+      img.onerror = reject; img.src = ev.target.result;
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    reader.onerror = reject; reader.readAsDataURL(file);
   });
 }
 
-// Parser Teks KTP Indonesia ke Field Terstruktur (NIK, Nama, TTL, Alamat, RT/RW, Kel/Desa, Kecamatan, Kab/Kota)
 function parseTeksKtpIndonesia(rawText) {
   const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
   const fullUpper = rawText.toUpperCase();
-
-  let nik = "";
-  const nikMatch = fullUpper.match(/\b\d{16}\b/);
-  if (nikMatch) nik = nikMatch[0];
-
-  let nama = "";
-  let ttl = "";
-  let alamat = "";
-  let rtRw = "";
-  let kelDesa = "";
-  let kecamatan = "";
-  let kabKota = "";
+  let nik = ""; const nikMatch = fullUpper.match(/\b\d{16}\b/); if (nikMatch) nik = nikMatch[0];
+  let nama = "", ttl = "", alamat = "", rtRw = "", kelDesa = "", kecamatan = "", kabKota = "";
 
   for (let i = 0; i < lines.length; i++) {
-    const lineUp = lines[i].toUpperCase();
-    const cleanVal = lines[i].replace(/^[^:]+:\s*/, '').trim();
-
-    if (!kabKota && (lineUp.includes('KABUPATEN') || lineUp.includes('KOTA '))) {
-      kabKota = lines[i].replace(/[^A-Za-z0-9\s.,-]/g, '').trim();
-    }
-    if (!nik && lineUp.includes('NIK')) {
-      const m = lineUp.replace(/[^0-9]/g, '');
-      if (m.length >= 12) nik = m.slice(0, 16);
-    }
-    if (!nama && lineUp.includes('NAMA')) {
-      nama = cleanVal.replace(/^NAMA\s*/i, '').replace(/[^A-Za-z\s'.,-]/g, '').trim();
-      if (!nama && lines[i + 1]) nama = lines[i + 1].replace(/[^A-Za-z\s'.,-]/g, '').trim();
-    }
-    if (!ttl && (lineUp.includes('TEMPAT') || lineUp.includes('LAHIR'))) {
-      ttl = cleanVal.replace(/^TEMPAT.*LAHIR\s*/i, '').trim();
-    }
-    if (!alamat && lineUp.includes('ALAMAT')) {
-      alamat = cleanVal.replace(/^ALAMAT\s*/i, '').trim();
-      if (!alamat && lines[i + 1]) alamat = lines[i + 1].trim();
-    }
+    const lineUp = lines[i].toUpperCase(); const cleanVal = lines[i].replace(/^[^:]+:\s*/, '').trim();
+    if (!kabKota && (lineUp.includes('KABUPATEN') || lineUp.includes('KOTA '))) kabKota = lines[i].replace(/[^A-Za-z0-9\s.,-]/g, '').trim();
+    if (!nik && lineUp.includes('NIK')) { const m = lineUp.replace(/[^0-9]/g, ''); if (m.length >= 12) nik = m.slice(0, 16); }
+    if (!nama && lineUp.includes('NAMA')) { nama = cleanVal.replace(/^NAMA\s*/i, '').replace(/[^A-Za-z\s'.,-]/g, '').trim(); if (!nama && lines[i + 1]) nama = lines[i + 1].replace(/[^A-Za-z\s'.,-]/g, '').trim(); }
+    if (!ttl && (lineUp.includes('TEMPAT') || lineUp.includes('LAHIR'))) ttl = cleanVal.replace(/^TEMPAT.*LAHIR\s*/i, '').trim();
+    if (!alamat && lineUp.includes('ALAMAT')) { alamat = cleanVal.replace(/^ALAMAT\s*/i, '').trim(); if (!alamat && lines[i + 1]) alamat = lines[i + 1].trim(); }
     if (!rtRw && (lineUp.includes('RT/RW') || lineUp.includes('RT / RW') || /\d{3}\s*\/\s*\d{3}/.test(lineUp))) {
       const rMatch = lineUp.match(/\d{3}\s*\/\s*\d{3}/);
       rtRw = rMatch ? rMatch[0].replace(/\s+/g, '') : cleanVal.replace(/^RT\/RW\s*/i, '').trim();
     }
-    if (!kelDesa && (lineUp.includes('KEL/DESA') || lineUp.includes('KELURAHAN') || lineUp.includes('DESA'))) {
-      kelDesa = cleanVal.replace(/^(KEL\/DESA|KELURAHAN|DESA)\s*/i, '').replace(/[^A-Za-z0-9\s.,-]/g, '').trim();
-    }
-    if (!kecamatan && lineUp.includes('KECAMATAN')) {
-      kecamatan = cleanVal.replace(/^KECAMATAN\s*/i, '').replace(/[^A-Za-z0-9\s.,-]/g, '').trim();
-    }
+    if (!kelDesa && (lineUp.includes('KEL/DESA') || lineUp.includes('KELURAHAN') || lineUp.includes('DESA'))) kelDesa = cleanVal.replace(/^(KEL\/DESA|KELURAHAN|DESA)\s*/i, '').replace(/[^A-Za-z0-9\s.,-]/g, '').trim();
+    if (!kecamatan && lineUp.includes('KECAMATAN')) kecamatan = cleanVal.replace(/^KECAMATAN\s*/i, '').replace(/[^A-Za-z0-9\s.,-]/g, '').trim();
   }
-
-  return {
-    nik: nik || "",
-    nama: nama || "",
-    ttl: ttl || "",
-    alamat: alamat || "",
-    rtRw: rtRw || "",
-    kelDesa: kelDesa || "",
-    kecamatan: kecamatan || "",
-    kabKota: kabKota || "",
-    rawText: rawText.trim()
-  };
+  return { nik, nama, ttl, alamat, rtRw, kelDesa, kecamatan, kabKota, rawText: rawText.trim() };
 }
 
 async function jalankanOcrKtp(file, mode = 'register') {
@@ -1958,10 +1895,7 @@ async function jalankanOcrKtp(file, mode = 'register') {
   const successEl = document.getElementById(mode === 'register' ? 'ktpSuccessBox' : 'susulanKtpSuccess');
   const prefix = mode === 'register' ? 'ocr' : 'susulanOcr';
 
-  if (statusEl) {
-    statusEl.classList.remove('hidden');
-    statusEl.innerText = "⏳ Sedang membaca & mengekstrak teks KTP Anda...";
-  }
+  if (statusEl) { statusEl.classList.remove('hidden'); statusEl.innerText = "⏳ Sedang membaca & mengekstrak teks KTP Anda..."; }
   if (successEl) successEl.classList.add('hidden');
 
   try {
@@ -1970,66 +1904,30 @@ async function jalankanOcrKtp(file, mode = 'register') {
 
     if (window.Tesseract && typeof Tesseract.recognize === 'function') {
       const res = await Tesseract.recognize(imgDataUrl, 'ind', {
-        logger: m => {
-          if (m.status === 'recognizing text' && statusEl) {
-            const pct = Math.round((m.progress || 0) * 100);
-            statusEl.innerText = `⏳ Membaca teks KTP (${pct}%)...`;
-          }
-        }
+        logger: m => { if (m.status === 'recognizing text' && statusEl) statusEl.innerText = `⏳ Membaca teks KTP (${Math.round((m.progress || 0) * 100)}%)...`; }
       });
-      const text = (res && res.data && res.data.text) ? res.data.text : "";
-      extracted = parseTeksKtpIndonesia(text);
+      extracted = parseTeksKtpIndonesia((res && res.data && res.data.text) ? res.data.text : "");
     }
 
-    document.getElementById(prefix + 'Nik').value = extracted.nik;
-    document.getElementById(prefix + 'Nama').value = extracted.nama;
-    document.getElementById(prefix + 'Ttl').value = extracted.ttl;
-    document.getElementById(prefix + 'Alamat').value = extracted.alamat;
-    document.getElementById(prefix + 'RtRw').value = extracted.rtRw;
-    document.getElementById(prefix + 'KelDesa').value = extracted.kelDesa;
-    document.getElementById(prefix + 'Kecamatan').value = extracted.kecamatan;
-    document.getElementById(prefix + 'KabKota').value = extracted.kabKota;
+    document.getElementById(prefix + 'Nik').value = extracted.nik; document.getElementById(prefix + 'Nama').value = extracted.nama;
+    document.getElementById(prefix + 'Ttl').value = extracted.ttl; document.getElementById(prefix + 'Alamat').value = extracted.alamat;
+    document.getElementById(prefix + 'RtRw').value = extracted.rtRw; document.getElementById(prefix + 'KelDesa').value = extracted.kelDesa;
+    document.getElementById(prefix + 'Kecamatan').value = extracted.kecamatan; document.getElementById(prefix + 'KabKota').value = extracted.kabKota;
     document.getElementById(prefix + 'RawText').value = extracted.rawText;
 
-    if (statusEl) statusEl.classList.add('hidden');
-    if (successEl) successEl.classList.remove('hidden');
-
-    if (mode === 'register') isKtpVerified = true;
-    else isSusulanKtpVerified = true;
+    if (statusEl) statusEl.classList.add('hidden'); if (successEl) successEl.classList.remove('hidden');
+    if (mode === 'register') isKtpVerified = true; else isSusulanKtpVerified = true;
   } catch (err) {
-    if (statusEl) statusEl.classList.add('hidden');
-    if (successEl) successEl.classList.remove('hidden');
-    if (mode === 'register') isKtpVerified = true;
-    else isSusulanKtpVerified = true;
+    if (statusEl) statusEl.classList.add('hidden'); if (successEl) successEl.classList.remove('hidden');
+    if (mode === 'register') isKtpVerified = true; else isSusulanKtpVerified = true;
     alert("⚠️ Foto KTP diterima. Silakan lengkapi kolom teks KTP di bawah agar data wilayah terbaca akurat oleh sistem.");
   }
 }
 
-function handleNativeVideoWajah(input) {
-  if (input.files && input.files[0]) {
-    isVideoVerified = true;
-    document.getElementById('videoSuccessBox').classList.remove('hidden');
-    alert("✅ Rekaman video wajah kedip 2x diterima!");
-  }
-}
-function handleNativeKtp(input) {
-  if (input.files && input.files[0]) {
-    jalankanOcrKtp(input.files[0], 'register');
-  }
-}
-
-function handleSusulanVideoWajah(input) {
-  if (input.files && input.files[0]) {
-    isSusulanVideoVerified = true;
-    document.getElementById('susulanVideoSuccess').classList.remove('hidden');
-    alert("✅ Video verifikasi wajah kedip 2x siap disimpan!");
-  }
-}
-function handleSusulanKtp(input) {
-  if (input.files && input.files[0]) {
-    jalankanOcrKtp(input.files[0], 'susulan');
-  }
-}
+function handleNativeVideoWajah(input) { if (input.files && input.files[0]) { isVideoVerified = true; document.getElementById('videoSuccessBox').classList.remove('hidden'); alert("✅ Rekaman video wajah kedip 2x diterima!"); } }
+function handleNativeKtp(input) { if (input.files && input.files[0]) { jalankanOcrKtp(input.files[0], 'register'); } }
+function handleSusulanVideoWajah(input) { if (input.files && input.files[0]) { isSusulanVideoVerified = true; document.getElementById('susulanVideoSuccess').classList.remove('hidden'); alert("✅ Video verifikasi wajah kedip 2x siap disimpan!"); } }
+function handleSusulanKtp(input) { if (input.files && input.files[0]) { jalankanOcrKtp(input.files[0], 'susulan'); } }
 
 function ambilObjekKtpDariForm(prefix) {
   return {
@@ -2045,530 +1943,233 @@ function ambilObjekKtpDariForm(prefix) {
   };
 }
 
-// Sinkronisasi indeks wilayah & status ke Firebase agar AI/Bot tambahan mudah membaca jumlah & sebaran driver
 function sinkronkanDirektoriDriverUntukAI(nrp, namaDriver, motorDriver, ktpObj, isLead) {
   if (!nrp) return;
-  const wilayahRingkas = [
-    ktpObj && ktpObj.kelDesa ? `Kel/Desa ${ktpObj.kelDesa}` : '',
-    ktpObj && ktpObj.kecamatan ? `Kec. ${ktpObj.kecamatan}` : '',
-    ktpObj && ktpObj.kabKota ? ktpObj.kabKota : ''
-  ].filter(Boolean).join(', ');
-
+  const wilayahRingkas = [ktpObj && ktpObj.kelDesa ? `Kel/Desa ${ktpObj.kelDesa}` : '', ktpObj && ktpObj.kecamatan ? `Kec. ${ktpObj.kecamatan}` : '', ktpObj && ktpObj.kabKota ? ktpObj.kabKota : ''].filter(Boolean).join(', ');
   db.ref("ai_driver_index/" + nrp).update({
-    nrp: nrp,
-    namaLengkap: (ktpObj && ktpObj.nama) || namaDriver || "Mitra Driver",
-    namaPanggilan: namaDriver || (ktpObj && ktpObj.nama) || "Mitra Driver",
-    motor: motorDriver || "",
-    nik: (ktpObj && ktpObj.nik) || "",
-    alamatLengkap: (ktpObj && ktpObj.alamat) || "",
-    rtRw: (ktpObj && ktpObj.rtRw) || "",
-    kelDesa: (ktpObj && ktpObj.kelDesa) || "",
-    kecamatan: (ktpObj && ktpObj.kecamatan) || "",
-    kabKota: (ktpObj && ktpObj.kabKota) || "",
-    wilayahDomisili: wilayahRingkas || "Belum dilengkapi",
-    isLeadDriver: !!isLead,
-    terverifikasiKtpWajah: !!(ktpObj && ktpObj.nama),
-    updatedAt: Date.now()
+    nrp: nrp, namaLengkap: (ktpObj && ktpObj.nama) || namaDriver || "Mitra Driver", namaPanggilan: namaDriver || (ktpObj && ktpObj.nama) || "Mitra Driver",
+    motor: motorDriver || "", nik: (ktpObj && ktpObj.nik) || "", alamatLengkap: (ktpObj && ktpObj.alamat) || "",
+    rtRw: (ktpObj && ktpObj.rtRw) || "", kelDesa: (ktpObj && ktpObj.kelDesa) || "", kecamatan: (ktpObj && ktpObj.kecamatan) || "",
+    kabKota: (ktpObj && ktpObj.kabKota) || "", wilayahDomisili: wilayahRingkas || "Belum dilengkapi",
+    isLeadDriver: !!isLead, terverifikasiKtpWajah: !!(ktpObj && ktpObj.nama), updatedAt: Date.now()
   });
 }
 
 async function finishRegister() {
   if (!isVideoVerified) { alert("⚠️ Mohon rekam video wajah berkedip 2x Anda terlebih dahulu!"); return; }
   if (!isKtpVerified) { alert("⚠️ Mohon ambil foto KTP asli Anda terlebih dahulu!"); return; }
-
   const ktpObj = ambilObjekKtpDariForm('ocr');
-  if (!ktpObj.nama || !ktpObj.alamat || !ktpObj.kecamatan) {
-    alert("⚠️ Mohon pastikan Nama Lengkap, Alamat, dan Kecamatan pada hasil pembacaan KTP sudah terisi dengan benar!");
-    return;
-  }
-
-  const pass = document.getElementById('regPassword').value.trim();
-  const passConfirm = document.getElementById('regPasswordConfirm').value.trim();
+  if (!ktpObj.nama || !ktpObj.alamat || !ktpObj.kecamatan) { alert("⚠️ Mohon pastikan Nama Lengkap, Alamat, dan Kecamatan pada hasil pembacaan KTP sudah terisi dengan benar!"); return; }
+  const pass = document.getElementById('regPassword').value.trim(); const passConfirm = document.getElementById('regPasswordConfirm').value.trim();
   if (!pass) { alert("⚠️ Silakan buat Password keamanan Anda!"); return; }
   if (pass !== passConfirm) { alert("⚠️ Konfirmasi password tidak cocok!"); return; }
 
-  const btn = document.getElementById('btnSelesaiDaftar');
-  btn.innerText = "⏳ Mohon tunggu sebentar...";
-  btn.disabled = true;
+  const btn = document.getElementById('btnSelesaiDaftar'); btn.innerText = "⏳ Mohon tunggu sebentar..."; btn.disabled = true;
   tampilkanLoadingNextLevel(true, "Mohon tunggu sebentar...", "Sedang menyimpan data KTP & membuat NRP Anda");
 
-  const d = new Date();
-  const yy = String(d.getFullYear()).slice(-2);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const prefix = yy + mm + dd;
+  const d = new Date(); const yy = String(d.getFullYear()).slice(-2); const mm = String(d.getMonth() + 1).padStart(2, '0'); const dd = String(d.getDate()).padStart(2, '0'); const prefix = yy + mm + dd;
 
   try {
-    const counterRef = db.ref('counters/nrp/' + prefix);
-    const result = await counterRef.transaction((currentValue) => (currentValue || 0) + 1);
-    const urut = String(result.snapshot.val()).padStart(2, '0');
-    const newNrp = prefix + urut;
-
-    const nowTs = Date.now();
-    await db.ref("drivers/" + newNrp).set({
-      password: pass,
-      nrp: newNrp,
-      policyAgreedAt: nowTs,
-      hasVideoVerified: true,
-      videoBlinkCount: 2,
-      videoVerifiedAt: nowTs,
-      hasKtpVerified: true,
-      ktpVerifiedAt: nowTs,
-      ktpData: ktpObj,
-      createdAt: nowTs
-    });
-
+    const counterRef = db.ref('counters/nrp/' + prefix); const result = await counterRef.transaction((currentValue) => (currentValue || 0) + 1);
+    const urut = String(result.snapshot.val()).padStart(2, '0'); const newNrp = prefix + urut; const nowTs = Date.now();
+    
+    await db.ref("drivers/" + newNrp).set({ password: pass, nrp: newNrp, policyAgreedAt: nowTs, hasVideoVerified: true, videoBlinkCount: 2, videoVerifiedAt: nowTs, hasKtpVerified: true, ktpVerifiedAt: nowTs, ktpData: ktpObj, createdAt: nowTs });
     sinkronkanDirektoriDriverUntukAI(newNrp, ktpObj.nama, "", ktpObj, false);
 
-    driverData.hasVideoVerified = true;
-    driverData.hasKtpVerified = true;
-    driverData.ktpData = ktpObj;
+    driverData.hasVideoVerified = true; driverData.hasKtpVerified = true; driverData.ktpData = ktpObj;
+    localStorage.setItem('nl_driver_nrp', newNrp); localStorage.setItem('nl_driver_password', pass); localStorage.setItem('nl_driver_data', JSON.stringify(driverData));
 
-    localStorage.setItem('nl_driver_nrp', newNrp);
-    localStorage.setItem('nl_driver_password', pass);
-    localStorage.setItem('nl_driver_data', JSON.stringify(driverData));
-
-    document.getElementById('displayNewNrp').innerText = newNrp;
-    document.getElementById('modalNrpSuccess').classList.add('open');
-  } catch (error) {
-    alert("❌ Koneksi sedang lambat. Pastikan sinyal stabil dan coba lagi.");
-  } finally {
-    tampilkanLoadingNextLevel(false);
-    btn.innerText = "SELESAI & DAPATKAN NRP ➔";
-    btn.disabled = false;
-  }
+    document.getElementById('displayNewNrp').innerText = newNrp; document.getElementById('modalNrpSuccess').classList.add('open');
+  } catch (error) { alert("❌ Koneksi sedang lambat. Pastikan sinyal stabil dan coba lagi."); } 
+  finally { tampilkanLoadingNextLevel(false); btn.innerText = "SELESAI & DAPATKAN NRP ➔"; btn.disabled = false; }
 }
 
 function tutupModalNrpDanMasuk() {
   document.getElementById('modalNrpSuccess').classList.remove('open');
-  localStorage.setItem('nl_is_registered', 'true');
-  localStorage.setItem('nl_session_unlocked', 'true');
-  localStorage.setItem('nl_session_time', Date.now().toString());
-  localStorage.setItem('nl_active_screen', 'screen-driver');
-  switchMainScreen('screen-driver');
-  openPageDriver('home');
-  perbaruiStatusVerifikasiSusulanUI();
+  localStorage.setItem('nl_is_registered', 'true'); localStorage.setItem('nl_session_unlocked', 'true'); localStorage.setItem('nl_session_time', Date.now().toString()); localStorage.setItem('nl_active_screen', 'screen-driver');
+  switchMainScreen('screen-driver'); openPageDriver('home'); perbaruiStatusVerifikasiSusulanUI();
 }
 
-// Simpan Verifikasi Susulan (Bagi Driver Lama / Yang Datanya Belum Tersimpan di Firebase)
 async function simpanVerifikasiSusulanKeFirebase() {
-  const nrp = localStorage.getItem('nl_driver_nrp');
-  if (!nrp) { alert("⚠️ Sesi NRP tidak ditemukan. Silakan masuk ulang."); return; }
+  const nrp = localStorage.getItem('nl_driver_nrp'); if (!nrp) { alert("⚠️ Sesi NRP tidak ditemukan. Silakan masuk ulang."); return; }
   if (!isSusulanVideoVerified) { alert("⚠️ Mohon rekam video wajah berkedip 2x terlebih dahulu!"); return; }
   if (!isSusulanKtpVerified) { alert("⚠️ Mohon ambil foto KTP asli Anda terlebih dahulu!"); return; }
-
   const ktpObj = ambilObjekKtpDariForm('susulanOcr');
-  if (!ktpObj.nama || !ktpObj.alamat || !ktpObj.kecamatan) {
-    alert("⚠️ Mohon lengkapi Nama Lengkap, Alamat, dan Kecamatan pada form KTP di atas!");
-    return;
-  }
+  if (!ktpObj.nama || !ktpObj.alamat || !ktpObj.kecamatan) { alert("⚠️ Mohon lengkapi Nama Lengkap, Alamat, dan Kecamatan pada form KTP di atas!"); return; }
 
-  const btn = document.getElementById('btnSimpanVerifikasiSusulan');
-  btn.disabled = true;
+  const btn = document.getElementById('btnSimpanVerifikasiSusulan'); btn.disabled = true;
   tampilkanLoadingNextLevel(true, "Menyimpan Verifikasi...", "Mengirim data KTP & verifikasi wajah ke server");
 
   try {
     const nowTs = Date.now();
-    await db.ref("drivers/" + nrp).update({
-      hasVideoVerified: true,
-      videoBlinkCount: 2,
-      videoVerifiedAt: nowTs,
-      hasKtpVerified: true,
-      ktpVerifiedAt: nowTs,
-      ktpData: ktpObj,
-      updatedAt: nowTs
-    });
-
-    driverData.hasVideoVerified = true;
-    driverData.hasKtpVerified = true;
-    driverData.ktpData = ktpObj;
+    await db.ref("drivers/" + nrp).update({ hasVideoVerified: true, videoBlinkCount: 2, videoVerifiedAt: nowTs, hasKtpVerified: true, ktpVerifiedAt: nowTs, ktpData: ktpObj, updatedAt: nowTs });
+    driverData.hasVideoVerified = true; driverData.hasKtpVerified = true; driverData.ktpData = ktpObj;
     localStorage.setItem('nl_driver_data', JSON.stringify(driverData));
-
     sinkronkanDirektoriDriverUntukAI(nrp, driverData.driver || ktpObj.nama, driverData.motor, ktpObj, driverData.isLeadDriver);
     perbaruiStatusVerifikasiSusulanUI();
-
     alert("✅ Terima kasih banyak! Data verifikasi wajah dan KTP Anda telah berhasil tersimpan resmi di sistem NEXT LEVEL.");
     openPageDriver('home');
-  } catch (e) {
-    alert("❌ Gagal menyimpan ke server. Periksa koneksi internet Anda dan coba lagi.");
-  } finally {
-    tampilkanLoadingNextLevel(false);
-    btn.disabled = false;
-  }
+  } catch (e) { alert("❌ Gagal menyimpan ke server. Periksa koneksi internet Anda dan coba lagi."); } 
+  finally { tampilkanLoadingNextLevel(false); btn.disabled = false; }
 }
 
 function perbaruiStatusVerifikasiSusulanUI() {
   const lengkap = !!(driverData && driverData.hasKtpVerified && driverData.hasVideoVerified && driverData.ktpData && driverData.ktpData.nama);
-  const banner = document.getElementById('globalVerifySusulanBanner');
-  const badge = document.getElementById('drawerVerifyBadge');
-  if (banner) banner.classList.toggle('hidden', lengkap);
-  if (badge) badge.classList.toggle('hidden', lengkap);
+  const banner = document.getElementById('globalVerifySusulanBanner'); const badge = document.getElementById('drawerVerifyBadge');
+  if (banner) banner.classList.toggle('hidden', lengkap); if (badge) badge.classList.toggle('hidden', lengkap);
 }
 
 // ================= 4. SISTEM UPDATE KEBIJAKAN NEXT LEVEL & LONCENG NOTIFIKASI =================
 function bukaHalamanKebijakanDariNotif() {
   openPageDriver('update-kebijakan');
-  if (kebijakanUpdatesList.length > 0) {
-    const newestTs = Math.max(...kebijakanUpdatesList.map(k => k.createdAt || 0));
-    localStorage.setItem('nl_last_seen_kebijakan_ts', String(newestTs));
-    perbaruiBadgeNotifKebijakan();
-  }
+  if (kebijakanUpdatesList.length > 0) { const newestTs = Math.max(...kebijakanUpdatesList.map(k => k.createdAt || 0)); localStorage.setItem('nl_last_seen_kebijakan_ts', String(newestTs)); perbaruiBadgeNotifKebijakan(); }
 }
-
 function perbaruiBadgeNotifKebijakan() {
-  const lastSeen = parseInt(localStorage.getItem('nl_last_seen_kebijakan_ts') || '0', 10);
-  const unreadCount = kebijakanUpdatesList.filter(k => (k.createdAt || 0) > lastSeen).length;
-
-  const headerBadge = document.getElementById('headerNotifBadge');
-  const drawerBadge = document.getElementById('drawerKebijakanBadge');
-
-  if (headerBadge) {
-    headerBadge.innerText = unreadCount;
-    headerBadge.classList.toggle('hidden', unreadCount === 0);
-  }
-  if (drawerBadge) {
-    drawerBadge.innerText = unreadCount;
-    drawerBadge.classList.toggle('hidden', unreadCount === 0);
-  }
+  const lastSeen = parseInt(localStorage.getItem('nl_last_seen_kebijakan_ts') || '0', 10); const unreadCount = kebijakanUpdatesList.filter(k => (k.createdAt || 0) > lastSeen).length;
+  const headerBadge = document.getElementById('headerNotifBadge'); const drawerBadge = document.getElementById('drawerKebijakanBadge');
+  if (headerBadge) { headerBadge.innerText = unreadCount; headerBadge.classList.toggle('hidden', unreadCount === 0); }
+  if (drawerBadge) { drawerBadge.innerText = unreadCount; drawerBadge.classList.toggle('hidden', unreadCount === 0); }
 }
-
 function renderHalamanUpdateKebijakan() {
-  const listEl = document.getElementById('listKebijakanImages');
-  const emptyEl = document.getElementById('emptyKebijakanImages');
-  if (!listEl || !emptyEl) return;
-
-  if (kebijakanUpdatesList.length === 0) {
-    emptyEl.style.display = 'block';
-    listEl.innerHTML = '';
-    return;
-  }
-
+  const listEl = document.getElementById('listKebijakanImages'); const emptyEl = document.getElementById('emptyKebijakanImages'); if (!listEl || !emptyEl) return;
+  if (kebijakanUpdatesList.length === 0) { emptyEl.style.display = 'block'; listEl.innerHTML = ''; return; }
   emptyEl.style.display = 'none';
   listEl.innerHTML = kebijakanUpdatesList.map(item => {
-    const tgl = item.createdAt ? new Date(item.createdAt).toLocaleString('id-ID') : '-';
-    const isSistem = item.tipe === 'sistem';
-    return `
-      <div class="p-2.5" style="background:rgba(0,0,0,0.42); border:1.5px solid ${isSistem ? '#60a5fa' : '#facc15'}; border-radius:12px;">
-        <div class="flex justify-between items-center mb-1.5">
-          <span style="background:${isSistem ? '#2563eb' : '#facc15'}; color:${isSistem ? '#ffffff' : '#000000'}; font-size:9.5px; font-weight:900; padding:2px 7px; border-radius:5px;">
-            ${isSistem ? '🔄 PEMBARUAN SISTEM (REFRESH 2X)' : '📢 KEBIJAKAN NEXT LEVEL'}
-          </span>
-          <span style="font-size:9.5px; color:#d1d5db;">${tgl}</span>
-        </div>
-        ${item.judul ? `<div class="font-bold text-yellow-300 mb-1.5" style="font-size:12px;">${item.judul}</div>` : ''}
-        <img src="${item.imageData}" alt="Kebijakan Next Level" onclick="bukaFullImage(this.src)" style="width:100%; border-radius:8px; cursor:pointer; display:block; border:1px solid rgba(255,255,255,0.2);">
-        <div class="text-center italic mt-1" style="font-size:9.5px; color:#fef08a;">🔍 Ketuk gambar untuk memperbesar layar penuh</div>
-      </div>
-    `;
+    const tgl = item.createdAt ? new Date(item.createdAt).toLocaleString('id-ID') : '-'; const isSistem = item.tipe === 'sistem';
+    return `<div class="p-2.5" style="background:rgba(0,0,0,0.42); border:1.5px solid ${isSistem ? '#60a5fa' : '#facc15'}; border-radius:12px;">
+      <div class="flex justify-between items-center mb-1.5"><span style="background:${isSistem ? '#2563eb' : '#facc15'}; color:${isSistem ? '#ffffff' : '#000000'}; font-size:9.5px; font-weight:900; padding:2px 7px; border-radius:5px;">${isSistem ? '🔄 PEMBARUAN SISTEM (REFRESH 2X)' : '📢 KEBIJAKAN NEXT LEVEL'}</span><span style="font-size:9.5px; color:#d1d5db;">${tgl}</span></div>
+      ${item.judul ? `<div class="font-bold text-yellow-300 mb-1.5" style="font-size:12px;">${item.judul}</div>` : ''}
+      <img src="${item.imageData}" alt="Kebijakan Next Level" onclick="bukaFullImage(this.src)" style="width:100%; border-radius:8px; cursor:pointer; display:block; border:1px solid rgba(255,255,255,0.2);">
+      <div class="text-center italic mt-1" style="font-size:9.5px; color:#fef08a;">🔍 Ketuk gambar untuk memperbesar layar penuh</div></div>`;
   }).join('');
 }
-
-// Listener Realtime Kebijakan Next Level
 db.ref("kebijakan_updates").on("value", (snapshot) => {
-  const arr = [];
-  snapshot.forEach(child => {
-    const val = child.val();
-    if (val && val.imageData) {
-      arr.push({ id: child.key, ...val });
-    }
-  });
-  arr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  kebijakanUpdatesList = arr;
-  perbaruiBadgeNotifKebijakan();
-  renderHalamanUpdateKebijakan();
-  renderDaftarKebijakanDiPanelOwner();
+  const arr = []; snapshot.forEach(child => { const val = child.val(); if (val && val.imageData) arr.push({ id: child.key, ...val }); });
+  arr.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)); kebijakanUpdatesList = arr;
+  perbaruiBadgeNotifKebijakan(); renderHalamanUpdateKebijakan(); renderDaftarKebijakanDiPanelOwner();
 });
 
 // ================= 5. SISTEM KHUSUS LEAD DRIVER (F = 0 BERSYARAT KONTRIBUSI 1 BULAN) =================
-db.ref("lead_drivers").on("value", (snapshot) => {
-  leadDriversMap = snapshot.val() || {};
-  evaluasiStatusLeadDriverSaya();
-  renderDaftarLeadDriverDiPanelOwner();
-});
-
-db.ref("driver_monthly_stats").on("value", (snapshot) => {
-  allDriversStatsMap = snapshot.val() || {};
-  evaluasiStatusLeadDriverSaya();
-  renderDaftarLeadDriverDiPanelOwner();
-});
+db.ref("lead_drivers").on("value", (snapshot) => { leadDriversMap = snapshot.val() || {}; evaluasiStatusLeadDriverSaya(); renderDaftarLeadDriverDiPanelOwner(); });
+db.ref("driver_monthly_stats").on("value", (snapshot) => { allDriversStatsMap = snapshot.val() || {}; evaluasiStatusLeadDriverSaya(); renderDaftarLeadDriverDiPanelOwner(); });
 
 function hitungStatusLeadDriver(nrp) {
-  if (!nrp || !leadDriversMap || !leadDriversMap[nrp]) {
-    return { isLead: false, exemptF: false, inPenalty: false, reason: "" };
-  }
-  const leadInfo = leadDriversMap[nrp];
-  const now = Date.now();
-  const monthKey = getCurrentMonthKey();
-  const monthStats = allDriversStatsMap[monthKey] || {};
-
-  // Hitung kontribusi Lead Driver vs rata-rata driver reguler bulan ini
+  if (!nrp || !leadDriversMap || !leadDriversMap[nrp]) return { isLead: false, exemptF: false, inPenalty: false, reason: "" };
+  const leadInfo = leadDriversMap[nrp]; const now = Date.now(); const monthKey = getCurrentMonthKey(); const monthStats = allDriversStatsMap[monthKey] || {};
   const leadOrderCount = (monthStats[nrp] && monthStats[nrp].orders) ? parseInt(monthStats[nrp].orders, 10) : 0;
-  let regTotalOrders = 0;
-  let regDriverCount = 0;
-  Object.keys(monthStats).forEach(otherNrp => {
-    if (!leadDriversMap[otherNrp]) {
-      const ordCnt = parseInt((monthStats[otherNrp] && monthStats[otherNrp].orders) || 0, 10);
-      if (ordCnt > 0) {
-        regTotalOrders += ordCnt;
-        regDriverCount++;
-      }
-    }
-  });
+  let regTotalOrders = 0, regDriverCount = 0;
+  Object.keys(monthStats).forEach(otherNrp => { if (!leadDriversMap[otherNrp]) { const ordCnt = parseInt((monthStats[otherNrp] && monthStats[otherNrp].orders) || 0, 10); if (ordCnt > 0) { regTotalOrders += ordCnt; regDriverCount++; } } });
   const avgRegularOrders = regDriverCount > 0 ? (regTotalOrders / regDriverCount) : 0;
+  let penaltyUntil = parseInt(leadInfo.penaltyUntil || 0, 10); const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000; const registeredAt = parseInt(leadInfo.registeredAt || now, 10); const hasCompletedOneMonth = (now - registeredAt) >= thirtyDaysMs;
 
-  let penaltyUntil = parseInt(leadInfo.penaltyUntil || 0, 10);
-  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-  const registeredAt = parseInt(leadInfo.registeredAt || now, 10);
-  const hasCompletedOneMonth = (now - registeredAt) >= thirtyDaysMs;
-
-  // Jika sedang dalam masa hukuman 1 bulan, namun kontribusi sekarang sudah kembali >= rata-rata driver lain, pulihkan langsung
   if (penaltyUntil > now) {
-    if (regDriverCount > 0 && leadOrderCount >= avgRegularOrders) {
-      db.ref("lead_drivers/" + nrp).update({ penaltyUntil: 0, lastEvaluatedAt: now });
-      penaltyUntil = 0;
-    } else {
-      return {
-        isLead: true,
-        exemptF: false,
-        inPenalty: true,
-        leadOrders: leadOrderCount,
-        avgRegular: Math.round(avgRegularOrders * 10) / 10,
-        penaltyUntil: penaltyUntil,
-        reason: `Masa evaluasi 1 bulan: Kontribusi Anda (${leadOrderCount} order) masih di bawah rata-rata driver reguler (${Math.round(avgRegularOrders)} order).`
-      };
-    }
+    if (regDriverCount > 0 && leadOrderCount >= avgRegularOrders) { db.ref("lead_drivers/" + nrp).update({ penaltyUntil: 0, lastEvaluatedAt: now }); penaltyUntil = 0; }
+    else return { isLead: true, exemptF: false, inPenalty: true, leadOrders: leadOrderCount, avgRegular: Math.round(avgRegularOrders * 10) / 10, penaltyUntil: penaltyUntil, reason: `Masa evaluasi 1 bulan: Kontribusi Anda (${leadOrderCount} order) masih di bawah rata-rata driver reguler (${Math.round(avgRegularOrders)} order).` };
   }
-
-  // Cek evaluasi bulanan setelah minimal 1 bulan bergabung sebagai Lead Driver
   if (hasCompletedOneMonth && regDriverCount > 0 && leadOrderCount < avgRegularOrders) {
-    const newPenaltyUntil = now + thirtyDaysMs;
-    db.ref("lead_drivers/" + nrp).update({ penaltyUntil: newPenaltyUntil, lastEvaluatedAt: now });
-    return {
-      isLead: true,
-      exemptF: false,
-      inPenalty: true,
-      leadOrders: leadOrderCount,
-      avgRegular: Math.round(avgRegularOrders * 10) / 10,
-      penaltyUntil: newPenaltyUntil,
-      reason: `Kontribusi 1 bulan terakhir (${leadOrderCount} order) lebih rendah dari rata-rata driver lain (${Math.round(avgRegularOrders)} order).`
-    };
+    const newPenaltyUntil = now + thirtyDaysMs; db.ref("lead_drivers/" + nrp).update({ penaltyUntil: newPenaltyUntil, lastEvaluatedAt: now });
+    return { isLead: true, exemptF: false, inPenalty: true, leadOrders: leadOrderCount, avgRegular: Math.round(avgRegularOrders * 10) / 10, penaltyUntil: newPenaltyUntil, reason: `Kontribusi 1 bulan terakhir (${leadOrderCount} order) lebih rendah dari rata-rata driver lain (${Math.round(avgRegularOrders)} order).` };
   }
-
-  return {
-    isLead: true,
-    exemptF: true,
-    inPenalty: false,
-    leadOrders: leadOrderCount,
-    avgRegular: Math.round(avgRegularOrders * 10) / 10,
-    reason: ""
-  };
+  return { isLead: true, exemptF: true, inPenalty: false, leadOrders: leadOrderCount, avgRegular: Math.round(avgRegularOrders * 10) / 10, reason: "" };
 }
 
 function evaluasiStatusLeadDriverSaya() {
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const status = hitungStatusLeadDriver(myNrp);
-
-  driverData.isLeadDriver = status.isLead;
-  driverData.leadDriverPenaltyActive = status.inPenalty;
-
-  const reminderBox = document.getElementById('leadDriverHomeReminder');
-  const statusBadge = document.getElementById('leadDriverStatusBadge');
-  const penaltyDetail = document.getElementById('leadDriverPenaltyDetail');
-
-  if (reminderBox) {
-    reminderBox.classList.toggle('hidden', !status.isLead);
-  }
+  const myNrp = localStorage.getItem('nl_driver_nrp'); const status = hitungStatusLeadDriver(myNrp);
+  driverData.isLeadDriver = status.isLead; driverData.leadDriverPenaltyActive = status.inPenalty;
+  const reminderBox = document.getElementById('leadDriverHomeReminder'); const statusBadge = document.getElementById('leadDriverStatusBadge'); const penaltyDetail = document.getElementById('leadDriverPenaltyDetail');
+  if (reminderBox) reminderBox.classList.toggle('hidden', !status.isLead);
   if (status.isLead && statusBadge && penaltyDetail) {
-    if (status.exemptF) {
-      statusBadge.innerText = "AKTIF (F = 0)";
-      statusBadge.style.background = "#10b981";
-      penaltyDetail.classList.add('hidden');
-    } else {
-      statusBadge.innerText = "PENALTI 1 BULAN (F BERLAKU)";
-      statusBadge.style.background = "#dc2626";
-      penaltyDetail.classList.remove('hidden');
-      penaltyDetail.innerText = `⚠️ ${status.reason} Tingkatkan pengambilan orderan Anda agar F kembali Rp 0.`;
-    }
+    if (status.exemptF) { statusBadge.innerText = "AKTIF (F = 0)"; statusBadge.style.background = "#10b981"; penaltyDetail.classList.add('hidden'); }
+    else { statusBadge.innerText = "PENALTI 1 BULAN (F BERLAKU)"; statusBadge.style.background = "#dc2626"; penaltyDetail.classList.remove('hidden'); penaltyDetail.innerText = `⚠️ ${status.reason} Tingkatkan pengambilan orderan Anda agar F kembali Rp 0.`; }
   }
-
   updateFinancialDashboard();
 }
 
-function catatKontribusiOrderBulanan(nrp) {
-  if (!nrp) return;
-  const monthKey = getCurrentMonthKey();
-  db.ref(`driver_monthly_stats/${monthKey}/${nrp}/orders`).transaction(cur => (cur || 0) + 1);
-  db.ref(`driver_monthly_stats/${monthKey}/${nrp}/updatedAt`).set(Date.now());
-}
+function catatKontribusiOrderBulanan(nrp) { if (!nrp) return; db.ref(`driver_monthly_stats/${getCurrentMonthKey()}/${nrp}/orders`).transaction(cur => (cur || 0) + 1); db.ref(`driver_monthly_stats/${getCurrentMonthKey()}/${nrp}/updatedAt`).set(Date.now()); }
 
 function formatKodeLotDriver(tgl, lot, jenisHuruf, k, a, f, t) {
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadStatus = hitungStatusLeadDriver(myNrp);
+  const leadStatus = hitungStatusLeadDriver(localStorage.getItem('nl_driver_nrp'));
   const fFinal = (leadStatus.isLead && leadStatus.exemptF) ? 0 : (parseInt(f) || 0);
   const tFinal = (parseInt(k) || 0) + (parseInt(a) || 0) + fFinal;
-  const suffixLead = (leadStatus.isLead && leadStatus.exemptF) ? "-LEAD DRIVER" : "";
-  return `NL.${tgl}.${lot}.${jenisHuruf}-K.${k}-A.${a}-F.${fFinal}-T.${tFinal}${suffixLead}`;
+  return `NL.${tgl}.${lot}.${jenisHuruf}-K.${k}-A.${a}-F.${fFinal}-T.${tFinal}${(leadStatus.isLead && leadStatus.exemptF) ? "-LEAD DRIVER" : ""}`;
 }
 
 // ================= 6. PANEL KONTROL OWNER (TAB, KEBIJAKAN GALERI, LEAD DRIVER) =================
 function switchOwnerPanelTab(tabName) {
-  const tabs = ['Token', 'Kebijakan', 'Lead'];
-  tabs.forEach(t => {
-    const btn = document.getElementById('ownerTabBtn' + t);
-    const panel = document.getElementById('ownerPanelTab' + t);
-    const active = (t.toLowerCase() === tabName);
-    if (btn) {
-      btn.style.background = active ? '#2563eb' : 'transparent';
-      btn.style.color = active ? '#ffffff' : '#1e3a8a';
-    }
+  ['Token', 'Kebijakan', 'Lead'].forEach(t => {
+    const btn = document.getElementById('ownerTabBtn' + t); const panel = document.getElementById('ownerPanelTab' + t); const active = (t.toLowerCase() === tabName);
+    if (btn) { btn.style.background = active ? '#2563eb' : 'transparent'; btn.style.color = active ? '#ffffff' : '#1e3a8a'; }
     if (panel) panel.classList.toggle('hidden', !active);
   });
-  if (tabName === 'kebijakan') renderDaftarKebijakanDiPanelOwner();
-  if (tabName === 'lead') renderDaftarLeadDriverDiPanelOwner();
+  if (tabName === 'kebijakan') renderDaftarKebijakanDiPanelOwner(); if (tabName === 'lead') renderDaftarLeadDriverDiPanelOwner();
 }
 
 function previewGambarKebijakanOwner(input) {
   if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
   const reader = new FileReader();
   reader.onload = function(ev) {
     const img = new Image();
     img.onload = function() {
-      // Kompres gambar kebijakan agar ringan di Firebase RTDB namun tetap tajam terbaca
-      const canvas = document.createElement('canvas');
-      const maxW = 1080;
-      let w = img.width;
-      let h = img.height;
-      if (w > maxW) {
-        h = Math.round((h * maxW) / w);
-        w = maxW;
-      }
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
+      const canvas = document.createElement('canvas'); const maxW = 1080; let w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round((h * maxW) / w); w = maxW; }
+      canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img, 0, 0, w, h);
       ownerPendingKebijakanImage = canvas.toDataURL('image/jpeg', 0.82);
-
-      document.getElementById('ownerKebijakanPreviewImg').src = ownerPendingKebijakanImage;
-      document.getElementById('ownerKebijakanPreviewBox').classList.remove('hidden');
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
+      document.getElementById('ownerKebijakanPreviewImg').src = ownerPendingKebijakanImage; document.getElementById('ownerKebijakanPreviewBox').classList.remove('hidden');
+    }; img.src = ev.target.result;
+  }; reader.readAsDataURL(input.files[0]);
 }
 
 async function publikasikanKebijakanKeFirebase() {
-  if (!ownerPendingKebijakanImage) {
-    alert("⚠️ Pilih gambar dari galeri terlebih dahulu!");
-    return;
-  }
-  const tipe = document.getElementById('ownerKebijakanTipe').value;
-  const judul = document.getElementById('ownerKebijakanJudul').value.trim();
-  const btn = document.getElementById('btnPublishKebijakanOwner');
-  btn.disabled = true;
-  btn.innerText = "⏳ MENGIRIM KE DRIVER...";
-
+  if (!ownerPendingKebijakanImage) { alert("⚠️ Pilih gambar dari galeri terlebih dahulu!"); return; }
+  const tipe = document.getElementById('ownerKebijakanTipe').value; const judul = document.getElementById('ownerKebijakanJudul').value.trim();
+  const btn = document.getElementById('btnPublishKebijakanOwner'); btn.disabled = true; btn.innerText = "⏳ MENGIRIM KE DRIVER...";
   try {
-    await db.ref("kebijakan_updates").push({
-      tipe: tipe,
-      judul: judul,
-      imageData: ownerPendingKebijakanImage,
-      createdAt: Date.now()
-    });
-    ownerPendingKebijakanImage = "";
-    document.getElementById('ownerKebijakanJudul').value = "";
-    document.getElementById('ownerKebijakanFileInput').value = "";
-    document.getElementById('ownerKebijakanPreviewBox').classList.add('hidden');
+    await db.ref("kebijakan_updates").push({ tipe: tipe, judul: judul, imageData: ownerPendingKebijakanImage, createdAt: Date.now() });
+    ownerPendingKebijakanImage = ""; document.getElementById('ownerKebijakanJudul').value = ""; document.getElementById('ownerKebijakanFileInput').value = ""; document.getElementById('ownerKebijakanPreviewBox').classList.add('hidden');
     alert("✅ Gambar kebijakan berhasil dikirim! Notifikasi lonceng merah otomatis muncul di seluruh aplikasi driver.");
-  } catch (e) {
-    alert("❌ Gagal mengirim gambar kebijakan. Coba pilih gambar dengan ukuran lebih kecil.");
-  } finally {
-    btn.disabled = false;
-    btn.innerText = "🚀 KIRIM & TAMPILKAN KE SEMUA DRIVER";
-  }
+  } catch (e) { alert("❌ Gagal mengirim gambar kebijakan. Coba pilih gambar dengan ukuran lebih kecil."); } finally { btn.disabled = false; btn.innerText = "🚀 KIRIM & TAMPILKAN KE SEMUA DRIVER"; }
 }
 
 function renderDaftarKebijakanDiPanelOwner() {
-  const box = document.getElementById('ownerListKebijakanAktif');
-  if (!box) return;
-  if (kebijakanUpdatesList.length === 0) {
-    box.innerHTML = `<div class="text-center" style="font-size:10.5px; color:#64748b; padding:8px;">Belum ada gambar kebijakan yang diunggah.</div>`;
-    return;
-  }
+  const box = document.getElementById('ownerListKebijakanAktif'); if (!box) return;
+  if (kebijakanUpdatesList.length === 0) { box.innerHTML = `<div class="text-center" style="font-size:10.5px; color:#64748b; padding:8px;">Belum ada gambar kebijakan yang diunggah.</div>`; return; }
   box.innerHTML = kebijakanUpdatesList.map(item => `
     <div class="flex items-center justify-between p-2" style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px;">
-      <div class="flex items-center gap-2" style="min-width:0;">
-        <img src="${item.imageData}" style="width:38px; height:38px; object-fit:cover; border-radius:6px; flex-shrink:0;">
-        <div style="min-width:0;">
-          <div class="font-bold" style="font-size:10.5px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.judul || (item.tipe === 'sistem' ? 'Pembaruan Sistem' : 'Kebijakan Next Level')}</div>
-          <div style="font-size:9px; color:#64748b;">${new Date(item.createdAt).toLocaleDateString('id-ID')}</div>
-        </div>
+      <div class="flex items-center gap-2" style="min-width:0;"><img src="${item.imageData}" style="width:38px; height:38px; object-fit:cover; border-radius:6px; flex-shrink:0;">
+        <div style="min-width:0;"><div class="font-bold" style="font-size:10.5px; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.judul || (item.tipe === 'sistem' ? 'Pembaruan Sistem' : 'Kebijakan Next Level')}</div><div style="font-size:9px; color:#64748b;">${new Date(item.createdAt).toLocaleDateString('id-ID')}</div></div>
       </div>
-      <button type="button" class="btn-sm" style="background:#dc2626; color:#ffffff; border:none;" onclick="hapusKebijakanOwner('${item.id}')">Hapus</button>
+      <button type="button" class="btn-sm" style="background:#dc2626; color:#ffffff; border:none;" onclick="if(confirm('Hapus gambar kebijakan ini?')) db.ref('kebijakan_updates/${item.id}').remove();">Hapus</button>
     </div>
   `).join('');
 }
 
-function hapusKebijakanOwner(id) {
-  if (!confirm("Hapus gambar kebijakan ini?")) return;
-  db.ref("kebijakan_updates/" + id).remove();
-}
-
 async function daftarkanLeadDriverOwner() {
-  const nrpInput = document.getElementById('inputLeadDriverNrp').value.trim();
-  if (!nrpInput) { alert("⚠️ Masukkan NRP Driver terlebih dahulu!"); return; }
-
+  const nrpInput = document.getElementById('inputLeadDriverNrp').value.trim(); if (!nrpInput) { alert("⚠️ Masukkan NRP Driver terlebih dahulu!"); return; }
   const driverSnap = await ambilDataDriverCepat(nrpInput);
-  if (!driverSnap) {
-    alert("❌ NRP tersebut tidak ditemukan di database driver!");
-    return;
-  }
-
+  if (!driverSnap) { alert("❌ NRP tersebut tidak ditemukan di database driver!"); return; }
   const namaDrv = driverSnap.driver || (driverSnap.ktpData && driverSnap.ktpData.nama) || "Mitra Driver";
-  await db.ref("lead_drivers/" + nrpInput).set({
-    nrp: nrpInput,
-    nama: namaDrv,
-    registeredAt: Date.now(),
-    penaltyUntil: 0
-  });
-  await db.ref("drivers/" + nrpInput).update({ isLeadDriver: true });
-  await db.ref("ai_driver_index/" + nrpInput).update({ isLeadDriver: true });
-
-  document.getElementById('inputLeadDriverNrp').value = "";
-  alert(`✅ NRP ${nrpInput} (${namaDrv}) resmi terdaftar sebagai LEAD DRIVER!\n\nPerhitungan F otomatis Rp 0 selama kontribusi bulanannya terjaga.`);
+  await db.ref("lead_drivers/" + nrpInput).set({ nrp: nrpInput, nama: namaDrv, registeredAt: Date.now(), penaltyUntil: 0 });
+  await db.ref("drivers/" + nrpInput).update({ isLeadDriver: true }); await db.ref("ai_driver_index/" + nrpInput).update({ isLeadDriver: true });
+  document.getElementById('inputLeadDriverNrp').value = ""; alert(`✅ NRP ${nrpInput} (${namaDrv}) resmi terdaftar sebagai LEAD DRIVER!\n\nPerhitungan F otomatis Rp 0 selama kontribusi bulanannya terjaga.`);
 }
 
 function hapusLeadDriverOwner(nrp) {
   if (!confirm(`Cabut status Lead Driver untuk NRP ${nrp}?`)) return;
-  db.ref("lead_drivers/" + nrp).remove();
-  db.ref("drivers/" + nrp).update({ isLeadDriver: false });
-  db.ref("ai_driver_index/" + nrp).update({ isLeadDriver: false });
+  db.ref("lead_drivers/" + nrp).remove(); db.ref("drivers/" + nrp).update({ isLeadDriver: false }); db.ref("ai_driver_index/" + nrp).update({ isLeadDriver: false });
 }
 
 function renderDaftarLeadDriverDiPanelOwner() {
-  const box = document.getElementById('ownerListLeadDrivers');
-  if (!box) return;
-  const keys = Object.keys(leadDriversMap || {});
-  if (keys.length === 0) {
-    box.innerHTML = `<div class="text-center" style="font-size:10.5px; color:#64748b; padding:8px;">Belum ada Lead Driver yang didaftarkan.</div>`;
-    return;
-  }
+  const box = document.getElementById('ownerListLeadDrivers'); if (!box) return;
+  const keys = Object.keys(leadDriversMap || {}); if (keys.length === 0) { box.innerHTML = `<div class="text-center" style="font-size:10.5px; color:#64748b; padding:8px;">Belum ada Lead Driver yang didaftarkan.</div>`; return; }
   box.innerHTML = keys.map(nrp => {
-    const info = leadDriversMap[nrp];
-    const st = hitungStatusLeadDriver(nrp);
-    return `
-      <div class="p-2 flex justify-between items-center" style="background:#f5f3ff; border:1px solid #c4b5fd; border-radius:8px;">
-        <div>
-          <div class="font-black" style="font-size:11px; color:#4c1d95;">⭐ ${info.nama || 'Driver'} (NRP: ${nrp})</div>
-          <div style="font-size:9.5px; color:${st.exemptF ? '#059669' : '#dc2626'}; font-weight:700;">
-            ${st.exemptF ? '✅ Aktif (F = 0)' : '⚠️ Penalti 1 Bulan (F Berlaku)'} • Bulan ini: ${st.leadOrders || 0} order
-          </div>
-        </div>
+    const info = leadDriversMap[nrp]; const st = hitungStatusLeadDriver(nrp);
+    return `<div class="p-2 flex justify-between items-center" style="background:#f5f3ff; border:1px solid #c4b5fd; border-radius:8px;">
+        <div><div class="font-black" style="font-size:11px; color:#4c1d95;">⭐ ${info.nama || 'Driver'} (NRP: ${nrp})</div><div style="font-size:9.5px; color:${st.exemptF ? '#059669' : '#dc2626'}; font-weight:700;">${st.exemptF ? '✅ Aktif (F = 0)' : '⚠️ Penalti 1 Bulan (F Berlaku)'} • Bulan ini: ${st.leadOrders || 0} order</div></div>
         <button type="button" class="btn-sm" style="background:#dc2626; color:#ffffff; border:none;" onclick="hapusLeadDriverOwner('${nrp}')">Cabut</button>
-      </div>
-    `;
+      </div>`;
   }).join('');
 }
+
 // ================= 7. LOGIN MENGGUNAKAN NRP & PASSWORD =================
 async function ambilDataDriverCepat(nrp) {
   if (!nrp) return null;
@@ -2577,59 +2178,32 @@ async function ambilDataDriverCepat(nrp) {
   const viaSdk = db.ref("drivers/" + nrp).once("value").then(s => s.exists() ? s.val() : null).catch(() => null);
   const firstResult = await Promise.race([viaRest, viaSdk]);
   if (firstResult) return firstResult;
-  const [resA, resB] = await Promise.all([viaRest, viaSdk]);
-  return resA || resB || null;
+  const [resA, resB] = await Promise.all([viaRest, viaSdk]); return resA || resB || null;
 }
 
 async function verifyLoginPassword() {
-  const inputNrp = document.getElementById('loginNrpInput').value.trim();
-  const inputPass = document.getElementById('loginPasswordInput').value.trim();
+  const inputNrp = document.getElementById('loginNrpInput').value.trim(); const inputPass = document.getElementById('loginPasswordInput').value.trim();
   if (!inputNrp || !inputPass) { alert("⚠️ Silakan masukkan NRP dan Password Anda!"); return; }
-
-  const btnLogin = document.querySelector('#screen-login .cta-button');
-  const oriBtnText = btnLogin.innerText;
-  btnLogin.innerText = '⏳ Mohon tunggu sebentar...';
-  btnLogin.disabled = true;
-  tampilkanLoadingNextLevel(true, "Mohon tunggu sebentar...", "Sedang menyiapkan dashboard driver Anda");
-
+  const btnLogin = document.querySelector('#screen-login .cta-button'); const oriBtnText = btnLogin.innerText;
+  btnLogin.innerText = '⏳ Mohon tunggu sebentar...'; btnLogin.disabled = true; tampilkanLoadingNextLevel(true, "Mohon tunggu sebentar...", "Sedang menyiapkan dashboard driver Anda");
   try {
     const dataDriver = await ambilDataDriverCepat(inputNrp);
     if (dataDriver) {
       if (String(dataDriver.password) === String(inputPass)) {
-        localStorage.setItem('nl_driver_nrp', inputNrp);
-        localStorage.setItem('nl_driver_password', inputPass);
-        localStorage.setItem('nl_is_registered', 'true');
-        localStorage.setItem('nl_session_unlocked', 'true');
-        localStorage.setItem('nl_session_time', Date.now().toString());
-        localStorage.setItem('nl_active_screen', 'screen-driver');
-
+        localStorage.setItem('nl_driver_nrp', inputNrp); localStorage.setItem('nl_driver_password', inputPass);
+        localStorage.setItem('nl_is_registered', 'true'); localStorage.setItem('nl_session_unlocked', 'true'); localStorage.setItem('nl_session_time', Date.now().toString()); localStorage.setItem('nl_active_screen', 'screen-driver');
         terapkanDataDriverKeUI(dataDriver);
-        const haloNrpEl = document.getElementById('haloNrp');
-        if (haloNrpEl) haloNrpEl.innerText = inputNrp;
-        
+        const haloNrpEl = document.getElementById('haloNrp'); if (haloNrpEl) haloNrpEl.innerText = inputNrp;
         const halamanTerakhir = localStorage.getItem('nl_active_driver_page') || 'home';
-        switchMainScreen('screen-driver', true);
-        openPageDriver(halamanTerakhir === 'chat-room' ? 'chat-inbox' : halamanTerakhir, true);
-        perbaruiStatusVerifikasiSusulanUI();
-        evaluasiStatusLeadDriverSaya();
-      } else {
-        alert("❌ Password tidak sesuai untuk NRP tersebut!");
-      }
-    } else {
-      alert("❌ NRP tidak ditemukan dalam sistem kami!");
-    }
-  } catch (e) {
-    alert("❌ Koneksi sedang lambat, silakan coba lagi.");
-  } finally {
-    tampilkanLoadingNextLevel(false);
-    btnLogin.innerText = oriBtnText;
-    btnLogin.disabled = false;
-  }
+        switchMainScreen('screen-driver', true); openPageDriver(halamanTerakhir === 'chat-room' ? 'chat-inbox' : halamanTerakhir, true);
+        perbaruiStatusVerifikasiSusulanUI(); evaluasiStatusLeadDriverSaya();
+      } else { alert("❌ Password tidak sesuai untuk NRP tersebut!"); }
+    } else { alert("❌ NRP tidak ditemukan dalam sistem kami!"); }
+  } catch (e) { alert("❌ Koneksi sedang lambat, silakan coba lagi."); } finally { tampilkanLoadingNextLevel(false); btnLogin.innerText = oriBtnText; btnLogin.disabled = false; }
 }
 
 function kunciAplikasi() {
-  document.getElementById('drawer').classList.remove('open');
-  localStorage.removeItem('nl_session_unlocked');
+  document.getElementById('drawer').classList.remove('open'); localStorage.removeItem('nl_session_unlocked');
   const savedNrp = localStorage.getItem('nl_driver_nrp') || '';
   if (document.getElementById('loginNrpInput')) document.getElementById('loginNrpInput').value = savedNrp;
   if (document.getElementById('loginPasswordInput')) document.getElementById('loginPasswordInput').value = '';
@@ -2639,88 +2213,43 @@ function kunciAplikasi() {
 // ================= 8. FUNGSI FORM PENDAFTARAN & LOT =================
 function onInputLotAwal() {
   const lot = parseInt(document.getElementById('fLot').value || 0);
-  document.getElementById('fK').value = lot * 2000;
-  document.getElementById('fA').value = lot * 1000;
-  recalcLotFormManual();
+  document.getElementById('fK').value = lot * 2000; document.getElementById('fA').value = lot * 1000; recalcLotFormManual();
 }
 
 function recalcLotFormManual() {
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadSt = hitungStatusLeadDriver(myNrp);
-  const k = parseInt(document.getElementById('fK').value || 0);
-  const a = parseInt(document.getElementById('fA').value || 0);
-  let f = parseInt(document.getElementById('fF').value || 0);
-  if (leadSt.isLead && leadSt.exemptF) {
-    f = 0;
-    document.getElementById('fF').value = 0;
-  }
-  document.getElementById('fT').value = k + a + f;
-  saveDriverFromForm();
+  const myNrp = localStorage.getItem('nl_driver_nrp'); const leadSt = hitungStatusLeadDriver(myNrp);
+  const k = parseInt(document.getElementById('fK').value || 0); const a = parseInt(document.getElementById('fA').value || 0); let f = parseInt(document.getElementById('fF').value || 0);
+  if (leadSt.isLead && leadSt.exemptF) { f = 0; document.getElementById('fF').value = 0; }
+  document.getElementById('fT').value = k + a + f; saveDriverFromForm();
 }
 
 function saveDriverFromForm() {
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadSt = hitungStatusLeadDriver(myNrp);
-  driverData.driver = document.getElementById('fDriver').value.trim();
-  driverData.motor = document.getElementById('fMotor').value.trim();
-  driverData.bank = document.getElementById('fBank').value.trim();
-  driverData.rek = document.getElementById('fRek').value.trim();
-  driverData.an = document.getElementById('fAn').value.trim();
-  driverData.lot = parseInt(document.getElementById('fLot').value || 0);
-  driverData.k = parseInt(document.getElementById('fK').value || 0);
-  driverData.a = parseInt(document.getElementById('fA').value || 0);
+  const myNrp = localStorage.getItem('nl_driver_nrp'); const leadSt = hitungStatusLeadDriver(myNrp);
+  driverData.driver = document.getElementById('fDriver').value.trim(); driverData.motor = document.getElementById('fMotor').value.trim();
+  driverData.bank = document.getElementById('fBank').value.trim(); driverData.rek = document.getElementById('fRek').value.trim(); driverData.an = document.getElementById('fAn').value.trim();
+  driverData.lot = parseInt(document.getElementById('fLot').value || 0); driverData.k = parseInt(document.getElementById('fK').value || 0); driverData.a = parseInt(document.getElementById('fA').value || 0);
   driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : parseInt(document.getElementById('fF').value || 0);
-  driverData.t = driverData.k + driverData.a + driverData.f;
-  driverData.tgl = document.getElementById('fTgl').value || getTodayDDMMYY();
+  driverData.t = driverData.k + driverData.a + driverData.f; driverData.tgl = document.getElementById('fTgl').value || getTodayDDMMYY();
   localStorage.setItem('nl_driver_data', JSON.stringify(driverData));
 }
 
 function syncDriverToFormAndStorage() {
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadSt = hitungStatusLeadDriver(myNrp);
-  if (leadSt.isLead && leadSt.exemptF) {
-    driverData.f = 0;
-  }
-  driverData.t = (parseInt(driverData.k) || 0) + (parseInt(driverData.a) || 0) + (parseInt(driverData.f) || 0);
-  driverData.tgl = getTodayDDMMYY();
-  if (document.getElementById('fLot')) document.getElementById('fLot').value = driverData.lot;
-  if (document.getElementById('fK')) document.getElementById('fK').value = driverData.k;
-  if (document.getElementById('fA')) document.getElementById('fA').value = driverData.a;
-  if (document.getElementById('fF')) document.getElementById('fF').value = driverData.f;
+  const myNrp = localStorage.getItem('nl_driver_nrp'); const leadSt = hitungStatusLeadDriver(myNrp);
+  if (leadSt.isLead && leadSt.exemptF) driverData.f = 0;
+  driverData.t = (parseInt(driverData.k) || 0) + (parseInt(driverData.a) || 0) + (parseInt(driverData.f) || 0); driverData.tgl = getTodayDDMMYY();
+  if (document.getElementById('fLot')) document.getElementById('fLot').value = driverData.lot; if (document.getElementById('fK')) document.getElementById('fK').value = driverData.k;
+  if (document.getElementById('fA')) document.getElementById('fA').value = driverData.a; if (document.getElementById('fF')) document.getElementById('fF').value = driverData.f;
   if (document.getElementById('fT')) document.getElementById('fT').value = driverData.t;
-  localStorage.setItem('nl_driver_data', JSON.stringify(driverData));
-  localStorage.setItem('nl_last_activity_time', Date.now().toString());
-  simpanDataDriverKeFirebase();
+  localStorage.setItem('nl_driver_data', JSON.stringify(driverData)); localStorage.setItem('nl_last_activity_time', Date.now().toString()); simpanDataDriverKeFirebase();
 }
 
 function simpanDataDriverKeFirebase() {
-  const nrp = localStorage.getItem('nl_driver_nrp');
-  const pass = localStorage.getItem('nl_driver_password');
-  if (!nrp || !driverData || !driverData.saved) return;
-  const myLeadSt = hitungStatusLeadDriver(nrp);
-  const fVal = (myLeadSt.isLead && myLeadSt.exemptF) ? 0 : (parseInt(driverData.f) || 0);
-  const tVal = (parseInt(driverData.k) || 0) + (parseInt(driverData.a) || 0) + fVal;
-
+  const nrp = localStorage.getItem('nl_driver_nrp'); const pass = localStorage.getItem('nl_driver_password'); if (!nrp || !driverData || !driverData.saved) return;
+  const myLeadSt = hitungStatusLeadDriver(nrp); const fVal = (myLeadSt.isLead && myLeadSt.exemptF) ? 0 : (parseInt(driverData.f) || 0); const tVal = (parseInt(driverData.k) || 0) + (parseInt(driverData.a) || 0) + fVal;
   const payload = {
-    password: pass,
-    nrp: nrp,
-    driver: driverData.driver || "",
-    motor: driverData.motor || "",
-    tgl: driverData.tgl || getTodayDDMMYY(),
-    lot: parseInt(driverData.lot) || 0,
-    k: parseInt(driverData.k) || 0,
-    a: parseInt(driverData.a) || 0,
-    f: fVal,
-    t: tVal,
-    isLeadDriver: !!myLeadSt.isLead,
-    leadDriverExemptF: !!(myLeadSt.isLead && myLeadSt.exemptF),
-    bank: driverData.bank || "",
-    rek: driverData.rek || "",
-    an: driverData.an || "",
-    saved: true,
-    accumulatedDriverIncome: accumulatedDriverIncome || 0,
-    orderIncomeBook: orderIncomeBook || [],
-    updatedAt: Date.now()
+    password: pass, nrp: nrp, driver: driverData.driver || "", motor: driverData.motor || "", tgl: driverData.tgl || getTodayDDMMYY(), lot: parseInt(driverData.lot) || 0,
+    k: parseInt(driverData.k) || 0, a: parseInt(driverData.a) || 0, f: fVal, t: tVal, isLeadDriver: !!myLeadSt.isLead, leadDriverExemptF: !!(myLeadSt.isLead && myLeadSt.exemptF),
+    bank: driverData.bank || "", rek: driverData.rek || "", an: driverData.an || "", saved: true, accumulatedDriverIncome: accumulatedDriverIncome || 0, orderIncomeBook: orderIncomeBook || [], updatedAt: Date.now()
   };
   db.ref("drivers/" + nrp).update(payload);
   sinkronkanDirektoriDriverUntukAI(nrp, driverData.driver, driverData.motor, driverData.ktpData, myLeadSt.isLead);
@@ -2728,143 +2257,63 @@ function simpanDataDriverKeFirebase() {
 
 function terapkanDataDriverKeUI(data) {
   if (!data) return;
-  const nrp = data.nrp || localStorage.getItem('nl_driver_nrp') || '';
-  const leadSt = hitungStatusLeadDriver(nrp);
-  const fLoaded = (leadSt.isLead && leadSt.exemptF) ? 0 : (parseInt(data.f) || 0);
-  const kLoaded = parseInt(data.k) || 0;
-  const aLoaded = parseInt(data.a) || 0;
-
+  const nrp = data.nrp || localStorage.getItem('nl_driver_nrp') || ''; const leadSt = hitungStatusLeadDriver(nrp);
+  const fLoaded = (leadSt.isLead && leadSt.exemptF) ? 0 : (parseInt(data.f) || 0); const kLoaded = parseInt(data.k) || 0; const aLoaded = parseInt(data.a) || 0;
   driverData = {
-    driver: data.driver || (data.ktpData && data.ktpData.nama) || "",
-    motor: data.motor || "",
-    tgl: getTodayDDMMYY(),
-    lot: parseInt(data.lot) || 0,
-    k: kLoaded,
-    a: aLoaded,
-    f: fLoaded,
-    t: kLoaded + aLoaded + fLoaded,
-    bank: data.bank || "",
-    rek: data.rek || "",
-    an: data.an || "",
-    saved: !!data.saved,
-    hasKtpVerified: !!(data.hasKtpVerified && data.ktpData && data.ktpData.nama),
-    hasVideoVerified: !!data.hasVideoVerified,
-    ktpData: data.ktpData || null,
-    isLeadDriver: !!(data.isLeadDriver || leadSt.isLead),
-    leadDriverPenaltyActive: !!leadSt.inPenalty
+    driver: data.driver || (data.ktpData && data.ktpData.nama) || "", motor: data.motor || "", tgl: getTodayDDMMYY(), lot: parseInt(data.lot) || 0,
+    k: kLoaded, a: aLoaded, f: fLoaded, t: kLoaded + aLoaded + fLoaded, bank: data.bank || "", rek: data.rek || "", an: data.an || "", saved: !!data.saved,
+    hasKtpVerified: !!(data.hasKtpVerified && data.ktpData && data.ktpData.nama), hasVideoVerified: !!data.hasVideoVerified, ktpData: data.ktpData || null,
+    isLeadDriver: !!(data.isLeadDriver || leadSt.isLead), leadDriverPenaltyActive: !!leadSt.inPenalty
   };
-  if (typeof data.accumulatedDriverIncome === 'number') {
-    accumulatedDriverIncome = data.accumulatedDriverIncome;
-    localStorage.setItem('nl_driver_income', accumulatedDriverIncome.toString());
-  }
-  if (Array.isArray(data.orderIncomeBook) && data.orderIncomeBook.length > 0) {
-    orderIncomeBook = data.orderIncomeBook;
-    localStorage.setItem('nl_income_book', JSON.stringify(orderIncomeBook));
-  }
-  if (document.getElementById('fDriver')) document.getElementById('fDriver').value = driverData.driver;
-  if (document.getElementById('fMotor')) document.getElementById('fMotor').value = driverData.motor;
-  if (document.getElementById('fBank')) document.getElementById('fBank').value = driverData.bank;
-  if (document.getElementById('fRek')) document.getElementById('fRek').value = driverData.rek;
-  if (document.getElementById('fAn')) document.getElementById('fAn').value = driverData.an;
-  if (document.getElementById('fLot')) document.getElementById('fLot').value = driverData.lot;
-  if (document.getElementById('fK')) document.getElementById('fK').value = driverData.k;
-  if (document.getElementById('fA')) document.getElementById('fA').value = driverData.a;
-  if (document.getElementById('fF')) document.getElementById('fF').value = driverData.f;
-  if (document.getElementById('fT')) document.getElementById('fT').value = driverData.t;
+  if (typeof data.accumulatedDriverIncome === 'number') { accumulatedDriverIncome = data.accumulatedDriverIncome; localStorage.setItem('nl_driver_income', accumulatedDriverIncome.toString()); }
+  if (Array.isArray(data.orderIncomeBook) && data.orderIncomeBook.length > 0) { orderIncomeBook = data.orderIncomeBook; localStorage.setItem('nl_income_book', JSON.stringify(orderIncomeBook)); }
+  if (document.getElementById('fDriver')) document.getElementById('fDriver').value = driverData.driver; if (document.getElementById('fMotor')) document.getElementById('fMotor').value = driverData.motor;
+  if (document.getElementById('fBank')) document.getElementById('fBank').value = driverData.bank; if (document.getElementById('fRek')) document.getElementById('fRek').value = driverData.rek;
+  if (document.getElementById('fAn')) document.getElementById('fAn').value = driverData.an; if (document.getElementById('fLot')) document.getElementById('fLot').value = driverData.lot;
+  if (document.getElementById('fK')) document.getElementById('fK').value = driverData.k; if (document.getElementById('fA')) document.getElementById('fA').value = driverData.a;
+  if (document.getElementById('fF')) document.getElementById('fF').value = driverData.f; if (document.getElementById('fT')) document.getElementById('fT').value = driverData.t;
   if (document.getElementById('fTgl')) document.getElementById('fTgl').value = driverData.tgl;
   localStorage.setItem('nl_driver_data', JSON.stringify(driverData));
-
-  if (driverData.saved) {
-    document.getElementById('formCard').classList.add('hidden');
-    document.getElementById('haloBox').classList.remove('hidden');
-    document.getElementById('haloName').innerText = driverData.driver;
-    document.getElementById('haloNrp').innerText = nrp || '-';
-  } else {
-    document.getElementById('formCard').classList.remove('hidden');
-    document.getElementById('haloBox').classList.add('hidden');
-  }
-  perbaruiStatusVerifikasiSusulanUI();
-  updateFinancialDashboard();
+  if (driverData.saved) { document.getElementById('formCard').classList.add('hidden'); document.getElementById('haloBox').classList.remove('hidden'); document.getElementById('haloName').innerText = driverData.driver; document.getElementById('haloNrp').innerText = nrp || '-'; }
+  else { document.getElementById('formCard').classList.remove('hidden'); document.getElementById('haloBox').classList.add('hidden'); }
+  perbaruiStatusVerifikasiSusulanUI(); updateFinancialDashboard();
 }
 
 function simpanDriver() {
   saveDriverFromForm();
-  if (!driverData.driver || !driverData.motor || !driverData.bank || !driverData.rek || !driverData.an) {
-    alert("Lengkapi data formulir driver!"); return;
-  }
-  const savedNrp = localStorage.getItem('nl_driver_nrp');
-  const savedPass = localStorage.getItem('nl_driver_password');
+  if (!driverData.driver || !driverData.motor || !driverData.bank || !driverData.rek || !driverData.an) { alert("Lengkapi data formulir driver!"); return; }
+  const savedNrp = localStorage.getItem('nl_driver_nrp'); const savedPass = localStorage.getItem('nl_driver_password');
   if (!savedNrp || !savedPass) { alert("⚠️ Sesi tidak valid. Silakan keluar dan masuk kembali."); return; }
-  driverData.saved = true;
-  driverData.tgl = getTodayDDMMYY();
-  localStorage.setItem('nl_driver_data', JSON.stringify(driverData));
-  localStorage.setItem('nl_is_registered', 'true');
-  localStorage.setItem('nl_session_unlocked', 'true');
-  localStorage.setItem('nl_session_time', Date.now().toString());
-  simpanDataDriverKeFirebase();
-
-  document.getElementById('formCard').classList.add('hidden');
-  document.getElementById('haloBox').classList.remove('hidden');
-  document.getElementById('haloName').innerText = driverData.driver;
-  document.getElementById('haloNrp').innerText = savedNrp;
-  updateFinancialDashboard();
-  alert("✅ Data driver & LOT berhasil disimpan!");
+  driverData.saved = true; driverData.tgl = getTodayDDMMYY();
+  localStorage.setItem('nl_driver_data', JSON.stringify(driverData)); localStorage.setItem('nl_is_registered', 'true'); localStorage.setItem('nl_session_unlocked', 'true'); localStorage.setItem('nl_session_time', Date.now().toString()); simpanDataDriverKeFirebase();
+  document.getElementById('formCard').classList.add('hidden'); document.getElementById('haloBox').classList.remove('hidden'); document.getElementById('haloName').innerText = driverData.driver; document.getElementById('haloNrp').innerText = savedNrp;
+  updateFinancialDashboard(); alert("✅ Data driver & LOT berhasil disimpan!");
 }
 
 // ================= 9. SISTEM MENU, ALARM & CHAT =================
 function toggleDrawer() { document.getElementById('drawer').classList.toggle('open'); }
-const BILL_LOCK_PAGES = ['jastip', 'ojek', 'ambil', 'custom'];
-const SETORAN_LOCK_LIMIT = 50000;
+const BILL_LOCK_PAGES = ['jastip', 'ojek', 'ambil', 'custom']; const SETORAN_LOCK_LIMIT = 50000;
 function isSetoranLocked() { return (driverData && (driverData.t || 0) >= SETORAN_LOCK_LIMIT); }
 function alertSetoranLocked() { alert(`🔒 MENU TERKUNCI!\n\nTotal setoran wajib (T) Anda sudah Rp ${(driverData.t || 0).toLocaleString('id-ID')} (batas Rp 50.000).\n\nWAJIB SETOR KAS.`); }
 
 function openPageDriver(pageId, save = true) {
   if (BILL_LOCK_PAGES.includes(pageId) && isSetoranLocked()) { if (save) alertSetoranLocked(); pageId = 'home'; }
   document.getElementById('drawer').classList.remove('open');
-  ['home', 'ambil-order', 'jastip', 'ojek', 'ambil', 'custom', 'chat-inbox', 'chat-room', 'rating-history', 'keuangan-detail', 'verifikasi-susulan', 'update-kebijakan'].forEach(p => { 
-    const el = document.getElementById('driver-page-' + p); if (el) el.classList.add('hidden'); 
-  });
-  const target = document.getElementById('driver-page-' + pageId);
-  if (target) target.classList.remove('hidden');
-  if (save) localStorage.setItem('nl_active_driver_page', pageId);
-
-  document.querySelectorAll('.btn-back-context').forEach(b => {
-    if (navigatedFromChatRoom) { b.innerHTML = '💬 KEMBALI KE CHAT'; b.style.background = '#25d366'; b.style.color = '#ffffff'; }
-    else { b.innerHTML = '➔ KEMBALI'; b.style.background = '#facc15'; b.style.color = '#7a0f0f'; }
-  });
-
+  ['home', 'ambil-order', 'jastip', 'ojek', 'ambil', 'custom', 'chat-inbox', 'chat-room', 'rating-history', 'keuangan-detail', 'verifikasi-susulan', 'update-kebijakan'].forEach(p => { const el = document.getElementById('driver-page-' + p); if (el) el.classList.add('hidden'); });
+  const target = document.getElementById('driver-page-' + pageId); if (target) target.classList.remove('hidden'); if (save) localStorage.setItem('nl_active_driver_page', pageId);
+  document.querySelectorAll('.btn-back-context').forEach(b => { if (navigatedFromChatRoom) { b.innerHTML = '💬 KEMBALI KE CHAT'; b.style.background = '#25d366'; b.style.color = '#ffffff'; } else { b.innerHTML = '➔ KEMBALI'; b.style.background = '#facc15'; b.style.color = '#7a0f0f'; } });
   if (pageId === 'jastip') { if (!restoreJastipState()) { if (jastipId === 0) addJastipLokasi(); } }
   if (pageId === 'ambil') { if (!restoreAmbilState()) { if (ambilId === 0) addAmbilLokasi(); } }
-  if (pageId === 'ojek') restoreOjekState();
-  if (pageId === 'custom') restoreCustomState();
-  if (pageId === 'chat-inbox') renderChatInbox();
-  if (pageId === 'ambil-order') checkLockRule();
-  if (pageId === 'keuangan-detail') renderBukuKas();
-  if (pageId === 'update-kebijakan') renderHalamanUpdateKebijakan();
-  if (pageId === 'verifikasi-susulan' && driverData && driverData.ktpData) {
-    document.getElementById('susulanOcrNik').value = driverData.ktpData.nik || '';
-    document.getElementById('susulanOcrNama').value = driverData.ktpData.nama || '';
-    document.getElementById('susulanOcrTtl').value = driverData.ktpData.ttl || '';
-    document.getElementById('susulanOcrAlamat').value = driverData.ktpData.alamat || '';
-    document.getElementById('susulanOcrRtRw').value = driverData.ktpData.rtRw || '';
-    document.getElementById('susulanOcrKelDesa').value = driverData.ktpData.kelDesa || '';
-    document.getElementById('susulanOcrKecamatan').value = driverData.ktpData.kecamatan || '';
-    document.getElementById('susulanOcrKabKota').value = driverData.ktpData.kabKota || '';
-  }
+  if (pageId === 'ojek') restoreOjekState(); if (pageId === 'custom') restoreCustomState(); if (pageId === 'chat-inbox') renderChatInbox(); if (pageId === 'ambil-order') checkLockRule(); if (pageId === 'keuangan-detail') renderBukuKas(); if (pageId === 'update-kebijakan') renderHalamanUpdateKebijakan();
+  if (pageId === 'verifikasi-susulan' && driverData && driverData.ktpData) { document.getElementById('susulanOcrNik').value = driverData.ktpData.nik || ''; document.getElementById('susulanOcrNama').value = driverData.ktpData.nama || ''; document.getElementById('susulanOcrTtl').value = driverData.ktpData.ttl || ''; document.getElementById('susulanOcrAlamat').value = driverData.ktpData.alamat || ''; document.getElementById('susulanOcrRtRw').value = driverData.ktpData.rtRw || ''; document.getElementById('susulanOcrKelDesa').value = driverData.ktpData.kelDesa || ''; document.getElementById('susulanOcrKecamatan').value = driverData.ktpData.kecamatan || ''; document.getElementById('susulanOcrKabKota').value = driverData.ktpData.kabKota || ''; }
   window.scrollTo(0, 0);
 }
 
-function handleTombolKembaliForm(currentForm) {
-  if (navigatedFromChatRoom) { navigatedFromChatRoom = false; openPageDriver('chat-room'); } 
-  else { openPageDriver('home'); }
-}
+function handleTombolKembaliForm(currentForm) { if (navigatedFromChatRoom) { navigatedFromChatRoom = false; openPageDriver('chat-room'); } else { openPageDriver('home'); } }
 
 function updateFinancialDashboard() {
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadSt = hitungStatusLeadDriver(myNrp);
-  const fDisplay = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f || 0);
-  const tDisplay = (driverData.k || 0) + (driverData.a || 0) + fDisplay;
-
+  const myNrp = localStorage.getItem('nl_driver_nrp'); const leadSt = hitungStatusLeadDriver(myNrp);
+  const fDisplay = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f || 0); const tDisplay = (driverData.k || 0) + (driverData.a || 0) + fDisplay;
   const lotText = formatKodeLotDriver(driverData.tgl, driverData.lot, 'J', driverData.k, driverData.a, fDisplay, tDisplay);
   if (document.getElementById('haloLot')) document.getElementById('haloLot').innerText = lotText;
   if (document.getElementById('dashTotalBayarT')) document.getElementById('dashTotalBayarT').innerText = 'Rp ' + tDisplay.toLocaleString('id-ID');
@@ -2873,148 +2322,84 @@ function updateFinancialDashboard() {
 }
 
 function checkLockRule() {
-  const isHighT = (driverData.t >= 50000);
-  const yesterdayStr = getYesterdayString();
-  const hasYesterdayOrders = orderIncomeBook.some(item => item.tanggal === yesterdayStr);
-  const isLockedByUnreported = hasYesterdayOrders && (lastReportSentDate !== yesterdayStr && lastReportSentDate !== getTodayString());
-  const warn = document.getElementById('lockWarningBox'); 
-  const bannerUnreported = document.getElementById('unreportedLockBanner'); 
-  if (warn) warn.classList.toggle('hidden', !isHighT);
-  if (bannerUnreported) bannerUnreported.classList.toggle('hidden', !isLockedByUnreported);
-  const menuNotice = document.getElementById('menuSetorLockNotice');
-  if (menuNotice) menuNotice.classList.toggle('hidden', !isHighT);
-  document.querySelectorAll('.billLockMenu').forEach(m => {
-    m.innerText = isHighT ? '🔒 ' + m.dataset.label + ' (TERKUNCI)' : m.dataset.label;
-    m.style.opacity = isHighT ? '0.5' : '';
-    m.setAttribute('aria-disabled', isHighT ? 'true' : 'false');
-  });
-  document.querySelectorAll('.btnTakeOrder').forEach(b => {
-    if (isLockedByUnreported) { b.disabled = true; b.innerText = '🔒 TERKUNCI (BELUM LAPOR KEMARIN)'; } 
-    else { b.disabled = false; b.innerText = '✅ AMBIL PESANAN'; }
-  });
+  const isHighT = (driverData.t >= 50000); const yesterdayStr = getYesterdayString(); const hasYesterdayOrders = orderIncomeBook.some(item => item.tanggal === yesterdayStr); const isLockedByUnreported = hasYesterdayOrders && (lastReportSentDate !== yesterdayStr && lastReportSentDate !== getTodayString());
+  const warn = document.getElementById('lockWarningBox'); const bannerUnreported = document.getElementById('unreportedLockBanner'); 
+  if (warn) warn.classList.toggle('hidden', !isHighT); if (bannerUnreported) bannerUnreported.classList.toggle('hidden', !isLockedByUnreported);
+  const menuNotice = document.getElementById('menuSetorLockNotice'); if (menuNotice) menuNotice.classList.toggle('hidden', !isHighT);
+  document.querySelectorAll('.billLockMenu').forEach(m => { m.innerText = isHighT ? '🔒 ' + m.dataset.label + ' (TERKUNCI)' : m.dataset.label; m.style.opacity = isHighT ? '0.5' : ''; m.setAttribute('aria-disabled', isHighT ? 'true' : 'false'); });
+  document.querySelectorAll('.btnTakeOrder').forEach(b => { if (isLockedByUnreported) { b.disabled = true; b.innerText = '🔒 TERKUNCI (BELUM LAPOR KEMARIN)'; } else { b.disabled = false; b.innerText = '✅ AMBIL PESANAN'; } });
 }
 
 function hentikanAlarmOrderan() {
-  if (!isAlarmRunning) return;
-  isAlarmRunning = false;
+  if (!isAlarmRunning) return; isAlarmRunning = false;
   if (alarmLoopTimer) { clearTimeout(alarmLoopTimer); alarmLoopTimer = null; }
   if (alarmMaxTimeoutTimer) { clearTimeout(alarmMaxTimeoutTimer); alarmMaxTimeoutTimer = null; }
-  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  if ('vibrate' in navigator) navigator.vibrate(0);
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel(); if ('vibrate' in navigator) navigator.vibrate(0);
 }
 
 function mulaiAlarmOrderan() {
-  if (isAlarmRunning) return;
-  const listAntrean = chatOrderDatabase.filter(c => c.status === 'antrean');
-  if (listAntrean.length === 0) return;
-  isAlarmRunning = true;
-  if (alarmMaxTimeoutTimer) clearTimeout(alarmMaxTimeoutTimer);
-  alarmMaxTimeoutTimer = setTimeout(() => { hentikanAlarmOrderan(); }, 5 * 60 * 1000);
-  putarSiklusAlarm();
+  if (isAlarmRunning) return; const listAntrean = chatOrderDatabase.filter(c => c.status === 'antrean'); if (listAntrean.length === 0) return;
+  isAlarmRunning = true; if (alarmMaxTimeoutTimer) clearTimeout(alarmMaxTimeoutTimer);
+  alarmMaxTimeoutTimer = setTimeout(() => { hentikanAlarmOrderan(); }, 5 * 60 * 1000); putarSiklusAlarm();
 }
 
 function putarSiklusAlarm() {
-  if (!isAlarmRunning) return;
-  if ('vibrate' in navigator) navigator.vibrate([400, 150, 400, 150, 600]);
-  let durasiTotalSirineMs = 500;
+  if (!isAlarmRunning) return; if ('vibrate' in navigator) navigator.vibrate([400, 150, 400, 150, 600]); let durasiTotalSirineMs = 500;
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (AudioContext) {
-      const ctx = new AudioContext();
-      const nadaMelengking = [1200, 1700, 1300, 1800, 1500, 1800];
-      const durasiPerNada = 0.08;
+      const ctx = new AudioContext(); const nadaMelengking = [1200, 1700, 1300, 1800, 1500, 1800]; const durasiPerNada = 0.08;
       nadaMelengking.forEach((freq, idx) => {
         const osc = ctx.createOscillator(); const gain = ctx.createGain();
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(freq, ctx.currentTime + (idx * durasiPerNada));
-        gain.gain.setValueAtTime(0.35, ctx.currentTime + (idx * durasiPerNada));
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (idx * durasiPerNada) + durasiPerNada);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(ctx.currentTime + (idx * durasiPerNada));
-        osc.stop(ctx.currentTime + (idx * durasiPerNada) + durasiPerNada);
+        gain.gain.setValueAtTime(0.35, ctx.currentTime + (idx * durasiPerNada)); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (idx * durasiPerNada) + durasiPerNada);
+        osc.connect(gain); gain.connect(ctx.destination); osc.start(ctx.currentTime + (idx * durasiPerNada)); osc.stop(ctx.currentTime + (idx * durasiPerNada) + durasiPerNada);
       });
       durasiTotalSirineMs = nadaMelengking.length * durasiPerNada * 1000;
     }
   } catch(e) {}
   setTimeout(() => {
     if (!isAlarmRunning) return;
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-      const pesan = new SpeechSynthesisUtterance("Orderan Next Level!");
-      pesan.lang = 'id-ID'; pesan.rate = 1.2; pesan.pitch = 1.1;
-      pesan.onend = function() { if (!isAlarmRunning) return; alarmLoopTimer = setTimeout(() => { putarSiklusAlarm(); }, 1500); };
-      pesan.onerror = function() { if (!isAlarmRunning) return; alarmLoopTimer = setTimeout(() => { putarSiklusAlarm(); }, 1500); };
-      window.speechSynthesis.speak(pesan);
-    } else { alarmLoopTimer = setTimeout(() => { putarSiklusAlarm(); }, 1500); }
+    if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const pesan = new SpeechSynthesisUtterance("Orderan Next Level!"); pesan.lang = 'id-ID'; pesan.rate = 1.2; pesan.pitch = 1.1; pesan.onend = function() { if (!isAlarmRunning) return; alarmLoopTimer = setTimeout(() => { putarSiklusAlarm(); }, 1500); }; pesan.onerror = function() { if (!isAlarmRunning) return; alarmLoopTimer = setTimeout(() => { putarSiklusAlarm(); }, 1500); }; window.speechSynthesis.speak(pesan); } 
+    else { alarmLoopTimer = setTimeout(() => { putarSiklusAlarm(); }, 1500); }
   }, durasiTotalSirineMs + 60);
 }
 
 function switchTabInbox(tab) {
-  activeInboxTab = tab;
-  const btnAntrean = document.getElementById('tabChatAntrean');
-  const btnAktif = document.getElementById('tabChatAktif');
-  if (tab === 'antrean') {
-    btnAntrean.style.background = '#25d366'; btnAntrean.style.color = '#ffffff';
-    btnAktif.style.background = '#f0f2f5'; btnAktif.style.color = '#4b5563';
-  } else {
-    btnAktif.style.background = '#25d366'; btnAktif.style.color = '#ffffff';
-    btnAntrean.style.background = '#f0f2f5'; btnAntrean.style.color = '#4b5563';
-  }
+  activeInboxTab = tab; const btnAntrean = document.getElementById('tabChatAntrean'); const btnAktif = document.getElementById('tabChatAktif');
+  if (tab === 'antrean') { btnAntrean.style.background = '#25d366'; btnAntrean.style.color = '#ffffff'; btnAktif.style.background = '#f0f2f5'; btnAktif.style.color = '#4b5563'; } 
+  else { btnAktif.style.background = '#25d366'; btnAktif.style.color = '#ffffff'; btnAntrean.style.background = '#f0f2f5'; btnAntrean.style.color = '#4b5563'; }
   renderChatInbox();
 }
 
 function renderChatInbox() {
-  const container = document.getElementById('inboxListContainer');
-  const listAntrean = chatOrderDatabase.filter(c => c.status === 'antrean');
-  const listAktif = chatOrderDatabase.filter(c => c.status === 'aktif');
-  document.getElementById('countInboxAntrean').innerText = listAntrean.length;
-  document.getElementById('countInboxAktif').innerText = listAktif.length;
-  document.getElementById('headerChatBadge').innerText = listAntrean.length;
-  document.getElementById('drawerChatBadge').innerText = listAntrean.length;
+  const container = document.getElementById('inboxListContainer'); const listAntrean = chatOrderDatabase.filter(c => c.status === 'antrean'); const listAktif = chatOrderDatabase.filter(c => c.status === 'aktif');
+  document.getElementById('countInboxAntrean').innerText = listAntrean.length; document.getElementById('countInboxAktif').innerText = listAktif.length;
+  document.getElementById('headerChatBadge').innerText = listAntrean.length; document.getElementById('drawerChatBadge').innerText = listAntrean.length;
   const currentList = (activeInboxTab === 'antrean') ? listAntrean : listAktif;
-
-  if (currentList.length === 0) {
-    container.innerHTML = `<div class="text-center p-4 text-gray-700" style="font-size:12px; margin-top:30px;">${activeInboxTab === 'antrean' ? 'Tidak ada antrean pesanan baru.' : 'Belum ada pesanan aktif.'}</div>`;
-    return;
-  }
+  if (currentList.length === 0) { container.innerHTML = `<div class="text-center p-4 text-gray-700" style="font-size:12px; margin-top:30px;">${activeInboxTab === 'antrean' ? 'Tidak ada antrean pesanan baru.' : 'Belum ada pesanan aktif.'}</div>`; return; }
   container.innerHTML = currentList.map(item => `
     <div class="chat-inbox-item">
       <div class="chat-avatar-round">${item.serviceIcon}</div>
       <div style="flex:1; min-width:0;" onclick="${item.status === 'aktif' ? `bukaChatLangsung('${item.id}', false)` : `bukaPreviewChat('${item.id}')`}">
-        <div class="flex justify-between items-center">
-          <b style="font-size:13px; color:#111b21;">${item.customerName}</b>
-          <span style="font-size:10px; color:#667781;">${item.time}</span>
-        </div>
+        <div class="flex justify-between items-center"><b style="font-size:13px; color:#111b21;">${item.customerName}</b><span style="font-size:10px; color:#667781;">${item.time}</span></div>
         <div style="font-size:11px; color:#075e54; font-weight:700;">${item.service}</div>
         <div style="font-size:11px; color:#667781; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${item.lastMessage}</div>
         <div style="font-size:10px; color:#2563eb; font-weight:bold; margin-top:2px; cursor:pointer;" onclick="copyWaNumber('${item.phone}', event)">📋 Salin Nomor: ${item.phone}</div>
       </div>
       <div style="display:flex; flex-direction:column; gap:4px;">
-        ${item.status === 'antrean' ? `
-          <button class="btn-sm" style="background:#25d366; color:#fff; border:none; padding:4px 8px; font-weight:bold;" onclick="mintaKonfirmasiAmbilOrder('${item.id}')">Ambil</button>
-          <button class="btn-sm" style="background:#e2e8f0; color:#111; border:none; padding:4px 8px;" onclick="bukaPreviewChat('${item.id}')">👁️ Intip</button>
-        ` : `<button class="btn-sm" style="background:#075e54; color:#fff; border:none; padding:6px 10px;" onclick="bukaChatLangsung('${item.id}', false)">Buka 💬</button>`}
+        ${item.status === 'antrean' ? `<button class="btn-sm" style="background:#25d366; color:#fff; border:none; padding:4px 8px; font-weight:bold;" onclick="mintaKonfirmasiAmbilOrder('${item.id}')">Ambil</button><button class="btn-sm" style="background:#e2e8f0; color:#111; border:none; padding:4px 8px;" onclick="bukaPreviewChat('${item.id}')">👁️ Intip</button>` : `<button class="btn-sm" style="background:#075e54; color:#fff; border:none; padding:6px 10px;" onclick="bukaChatLangsung('${item.id}', false)">Buka 💬</button>`}
       </div>
     </div>
   `).join('');
 }
 
 function bukaPreviewChat(orderId) {
-  hentikanAlarmOrderan(); 
-  const ord = chatOrderDatabase.find(o => o.id === orderId);
-  if (!ord) return;
-  previewOrderId = orderId;
-  document.getElementById('pvCustName').innerText = `${ord.customerName}`;
-  document.getElementById('pvCustService').innerHTML = `Layanan: ${ord.service} <span style="margin-left:8px; cursor:pointer; color:#facc15; font-weight:bold; text-decoration:underline;" onclick="copyWaNumber('${ord.phone}', event)">📋 ${ord.phone}</span>`;
-  const bodyEl = document.getElementById('pvMessageBody');
-  bodyEl.innerHTML = ord.history.map(msg => `
-    <div class="${msg.sender === 'customer' ? 'chat-bubble-in' : 'chat-bubble-out'}" style="margin-bottom:6px;">
-      <div style="font-size:9px; color:#64748b; font-weight:bold;">${msg.sender === 'customer' ? ord.customerName : 'Sistem Bot'}</div>
-      <div>${msg.text.replace(/\n/g, '<br>')}</div>
-    </div>
-  `).join('');
+  hentikanAlarmOrderan(); const ord = chatOrderDatabase.find(o => o.id === orderId); if (!ord) return; previewOrderId = orderId;
+  document.getElementById('pvCustName').innerText = `${ord.customerName}`; document.getElementById('pvCustService').innerHTML = `Layanan: ${ord.service} <span style="margin-left:8px; cursor:pointer; color:#facc15; font-weight:bold; text-decoration:underline;" onclick="copyWaNumber('${ord.phone}', event)">📋 ${ord.phone}</span>`;
+  document.getElementById('pvMessageBody').innerHTML = ord.history.map(msg => `<div class="${msg.sender === 'customer' ? 'chat-bubble-in' : 'chat-bubble-out'}" style="margin-bottom:6px;"><div style="font-size:9px; color:#64748b; font-weight:bold;">${msg.sender === 'customer' ? ord.customerName : 'Sistem Bot'}</div><div>${msg.text.replace(/\n/g, '<br>')}</div></div>`).join('');
   document.getElementById('modalPreviewChat').classList.add('open');
 }
-
 function tutupPreviewChat() { document.getElementById('modalPreviewChat').classList.remove('open'); previewOrderId = null; }
 function eksekusiAmbilDariPreview() { if (!previewOrderId) return; const idTarget = previewOrderId; tutupPreviewChat(); mintaKonfirmasiAmbilOrder(idTarget); }
 function mintaKonfirmasiAmbilOrder(orderId) { hentikanAlarmOrderan(); pendingTakeOrderId = orderId; document.getElementById('modalSopAmbilPesanan').classList.add('open'); }
@@ -3022,212 +2407,109 @@ function tutupModalSopAmbilPesanan() { document.getElementById('modalSopAmbilPes
 function konfirmasiSopDanLanjutAmbil() { if (!pendingTakeOrderId) return; const targetId = pendingTakeOrderId; tutupModalSopAmbilPesanan(); prosesAmbilPesananResmi(targetId); }
 
 function prosesAmbilPesananResmi(orderId) {
-  const ord = chatOrderDatabase.find(o => o.id === orderId);
-  if (!ord) return;
-  ord.status = 'aktif';
-  const namaDriver = driverData.driver || "Mitra Driver";
-  const motorDriver = driverData.motor || "";
-  const jam = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const ord = chatOrderDatabase.find(o => o.id === orderId); if (!ord) return; ord.status = 'aktif';
+  const namaDriver = driverData.driver || "Mitra Driver"; const motorDriver = driverData.motor || ""; const jam = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const pesanBot = `Kabar baik Kak! Pesanan Anda telah diambil oleh Driver ${namaDriver} ${motorDriver ? `(${motorDriver})` : ''}. Driver sedang membaca detail pesanan Anda. 🙏🛵`;
-  ord.history.push({ sender: 'driver', text: pesanBot, time: jam });
-  db.ref("chat_orders/" + orderId).update({ status: "aktif", driverName: namaDriver, driverMotor: motorDriver, lastMessage: pesanBot });
-  db.ref("chat_orders/" + orderId + "/messages").push({ sender: "driver", text: pesanBot, time: jam });
-  renderChatInbox();
-  bukaChatLangsung(orderId, true);
+  ord.history.push({ sender: 'driver', text: pesanBot, time: jam }); db.ref("chat_orders/" + orderId).update({ status: "aktif", driverName: namaDriver, driverMotor: motorDriver, lastMessage: pesanBot }); db.ref("chat_orders/" + orderId + "/messages").push({ sender: "driver", text: pesanBot, time: jam });
+  renderChatInbox(); bukaChatLangsung(orderId, true);
 }
 
 function bukaChatLangsung(orderId, isBaruDiambil = false) {
-  hentikanAlarmOrderan();
-  const ord = chatOrderDatabase.find(o => o.id === orderId);
-  if (!ord) return;
-  activeChatOrder = ord;
-  localStorage.setItem('nl_last_chat_order_id', orderId);
-  document.getElementById('roomTargetCustomer').innerText = ord.customerName;
-  document.getElementById('roomTargetSub').innerHTML = `Layanan: ${ord.service} <span style="margin-left:6px; cursor:pointer; color:#15803d; font-weight:bold; background:#dcf8c6; padding:2px 4px; border-radius:4px;" onclick="copyWaNumber('${ord.phone}', event)">📋 ${ord.phone}</span>`;
-  const inputEl = document.getElementById('driverChatTextInput');
-  inputEl.value = isBaruDiambil ? `Halo, saya ${driverData.driver || "Mitra Driver"}, Driver Next Level yang akan meng-handle pesanan Anda.` : '';
-  renderRoomMessages();
-  openPageDriver('chat-room');
-
-  if (window.currentChatListenerRef) window.currentChatListenerRef.off();
-  window.currentChatListenerRef = db.ref("chat_orders/" + orderId + "/messages");
+  hentikanAlarmOrderan(); const ord = chatOrderDatabase.find(o => o.id === orderId); if (!ord) return;
+  activeChatOrder = ord; localStorage.setItem('nl_last_chat_order_id', orderId);
+  document.getElementById('roomTargetCustomer').innerText = ord.customerName; document.getElementById('roomTargetSub').innerHTML = `Layanan: ${ord.service} <span style="margin-left:6px; cursor:pointer; color:#15803d; font-weight:bold; background:#dcf8c6; padding:2px 4px; border-radius:4px;" onclick="copyWaNumber('${ord.phone}', event)">📋 ${ord.phone}</span>`;
+  document.getElementById('driverChatTextInput').value = isBaruDiambil ? `Halo, saya ${driverData.driver || "Mitra Driver"}, Driver Next Level yang akan meng-handle pesanan Anda.` : '';
+  renderRoomMessages(); openPageDriver('chat-room');
+  if (window.currentChatListenerRef) window.currentChatListenerRef.off(); window.currentChatListenerRef = db.ref("chat_orders/" + orderId + "/messages");
   window.currentChatListenerRef.on("child_added", (snapshot) => {
     const msg = snapshot.val();
     if (activeChatOrder && activeChatOrder.id === orderId && msg) {
       const sudahAda = activeChatOrder.history.some(m => m.text === msg.text && m.sender === msg.sender && (m.time === msg.time || !m.time));
-      if (!sudahAda) {
-        activeChatOrder.history.push({ sender: msg.sender || "customer", text: msg.text || "", time: msg.time || "Baru saja", media: msg.media || null });
-        renderRoomMessages();
-      }
+      if (!sudahAda) { activeChatOrder.history.push({ sender: msg.sender || "customer", text: msg.text || "", time: msg.time || "Baru saja", media: msg.media || null }); renderRoomMessages(); }
     }
   });
 }
 
 function bukaChatDariCust(name, service) {
-  hentikanAlarmOrderan();
-  let ord = chatOrderDatabase.find(c => c.customerName.includes(name));
-  if (!ord) {
-    ord = { id: "ord-" + Date.now(), customerName: name, phone: "-", service: service || "Pesanan Khusus", serviceIcon: "📦", status: "aktif", lastMessage: "Halo driver!", time: "Baru saja", history: [{ sender: 'customer', text: 'Halo driver, mohon diproses ya!' }] };
-    chatOrderDatabase.unshift(ord);
-  }
+  hentikanAlarmOrderan(); let ord = chatOrderDatabase.find(c => c.customerName.includes(name));
+  if (!ord) { ord = { id: "ord-" + Date.now(), customerName: name, phone: "-", service: service || "Pesanan Khusus", serviceIcon: "📦", status: "aktif", lastMessage: "Halo driver!", time: "Baru saja", history: [{ sender: 'customer', text: 'Halo driver, mohon diproses ya!' }] }; chatOrderDatabase.unshift(ord); }
   bukaChatLangsung(ord.id, false);
 }
 
 function renderRoomMessages() {
-  if (!activeChatOrder) return;
-  const box = document.getElementById('roomMessageList');
-  box.innerHTML = activeChatOrder.history.map(m => {
-    const isDriver = (m.sender === 'driver');
-    return `
-      <div class="${isDriver ? 'chat-bubble-out' : 'chat-bubble-in'}">
-        ${m.media ? `<div class="chat-media-box"><img src="${m.media}" alt="Media Chat" onclick="bukaFullImage(this.src)" style="cursor:pointer;"></div>` : ''}
-        <div>${m.text ? m.text.replace(/\n/g, '<br>') : ''}</div>
-        <div class="chat-bubble-meta"><span>${m.time || 'Baru saja'}</span>${isDriver ? `<span class="check-blue">✓✓</span>` : ''}</div>
-      </div>
-    `;
-  }).join('');
+  if (!activeChatOrder) return; const box = document.getElementById('roomMessageList');
+  box.innerHTML = activeChatOrder.history.map(m => `<div class="${m.sender === 'driver' ? 'chat-bubble-out' : 'chat-bubble-in'}">${m.media ? `<div class="chat-media-box"><img src="${m.media}" alt="Media Chat" onclick="bukaFullImage(this.src)" style="cursor:pointer;"></div>` : ''}<div>${m.text ? m.text.replace(/\n/g, '<br>') : ''}</div><div class="chat-bubble-meta"><span>${m.time || 'Baru saja'}</span>${m.sender === 'driver' ? `<span class="check-blue">✓✓</span>` : ''}</div></div>`).join('');
   box.scrollTop = box.scrollHeight;
 }
 
 function kirimPesanDriver() {
-  if (!activeChatOrder) return;
-  const inp = document.getElementById('driverChatTextInput');
-  const txt = inp.value.trim();
-  if (!txt) return;
-  const jam = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  db.ref("chat_orders/" + activeChatOrder.id).update({ lastMessage: txt });
-  db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({ sender: "driver", text: txt, time: jam });
-  inp.value = '';
+  if (!activeChatOrder) return; const inp = document.getElementById('driverChatTextInput'); const txt = inp.value.trim(); if (!txt) return; const jam = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  db.ref("chat_orders/" + activeChatOrder.id).update({ lastMessage: txt }); db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({ sender: "driver", text: txt, time: jam }); inp.value = '';
 }
-
 function kirimMediaDriver(e) {
-  if (!activeChatOrder) return;
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(event) {
-    const b64 = event.target.result;
-    db.ref("chat_orders/" + activeChatOrder.id).update({ lastMessage: '📷 [Foto dikirim oleh Driver]' });
-    db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({ sender: "driver", text: '📷 [Foto dikirim oleh Driver]', media: b64, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
-  };
+  if (!activeChatOrder) return; const file = e.target.files[0]; if (!file) return; const reader = new FileReader();
+  reader.onload = function(event) { const b64 = event.target.result; db.ref("chat_orders/" + activeChatOrder.id).update({ lastMessage: '📷 [Foto dikirim oleh Driver]' }); db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({ sender: "driver", text: '📷 [Foto dikirim oleh Driver]', media: b64, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); };
   reader.readAsDataURL(file); e.target.value = '';
 }
-
-function lampirkanSkemaFeeProduk() {
-  if (!activeChatOrder) return;
-  const txt = '📋 *SOP RESMI: SKEMA FEE PER PRODUK NEXT LEVEL*\nBerikut rincian transparansi fee penanganan belanja produk yang berlaku.\n\n_(Silakan klik gambar di atas untuk melihat ukuran penuh / jelas)_';
-  db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({ sender: "driver", text: txt, media: LINK_SKEMA_FEE_PRODUK, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
-}
-function lampirkanSkemaUangTunggu() {
-  if (!activeChatOrder) return;
-  const txt = '⏳ *SOP RESMI: SKEMA UANG TUNGGU & FEE KESEPAKATAN*\nBerikut rincian tarif waktu tunggu dan penanganan kesepakatan khusus.\n\n_(Silakan klik gambar di atas untuk melihat ukuran penuh / jelas)_';
-  db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({ sender: "driver", text: txt, media: LINK_SKEMA_UANG_TUNGGU, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
-}
-function lampirkanSkemaLuarArea() {
-  if (!activeChatOrder) return;
-  const txt = '🗺️ *SOP RESMI: PESANAN DI LUAR AREA JANGKAUAN*\nBerikut rincian ketentuan dan tarif penanganan untuk rute di luar batas operasional normal.\n\n_(Silakan klik gambar di atas untuk melihat ukuran penuh / jelas)_';
-  db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({ sender: "driver", text: txt, media: LINK_SKEMA_LUAR_AREA, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
-}
-
+function lampirkanSkemaFeeProduk() { if (!activeChatOrder) return; const txt = '📋 *SOP RESMI: SKEMA FEE PER PRODUK NEXT LEVEL*\nBerikut rincian transparansi fee penanganan belanja produk yang berlaku.\n\n_(Silakan klik gambar di atas untuk melihat ukuran penuh / jelas)_'; db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({ sender: "driver", text: txt, media: LINK_SKEMA_FEE_PRODUK, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); }
+function lampirkanSkemaUangTunggu() { if (!activeChatOrder) return; const txt = '⏳ *SOP RESMI: SKEMA UANG TUNGGU & FEE KESEPAKATAN*\nBerikut rincian tarif waktu tunggu dan penanganan kesepakatan khusus.\n\n_(Silakan klik gambar di atas untuk melihat ukuran penuh / jelas)_'; db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({ sender: "driver", text: txt, media: LINK_SKEMA_UANG_TUNGGU, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); }
+function lampirkanSkemaLuarArea() { if (!activeChatOrder) return; const txt = '🗺️ *SOP RESMI: PESANAN DI LUAR AREA JANGKAUAN*\nBerikut rincian ketentuan dan tarif penanganan untuk rute di luar batas operasional normal.\n\n_(Silakan klik gambar di atas untuk melihat ukuran penuh / jelas)_'; db.ref("chat_orders/" + activeChatOrder.id + "/messages").push({ sender: "driver", text: txt, media: LINK_SKEMA_LUAR_AREA, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }); }
 function bukaFullImage(srcUrl) { document.getElementById('fullImageTarget').src = srcUrl; document.getElementById('modalFullImageView').classList.add('open'); }
 function tutupFullImageDirect() { document.getElementById('modalFullImageView').classList.remove('open'); }
 function tutupFullImage(e) { if (e.target.id === 'modalFullImageView') tutupFullImageDirect(); }
-
 function bukaFormBillDariChat() {
-  if (!activeChatOrder) return; navigatedFromChatRoom = true;
-  const s = activeChatOrder.service.toLowerCase();
-  if (s.includes('jastip')) openPageDriver('jastip');
-  else if (s.includes('ojek')) openPageDriver('ojek');
-  else if (s.includes('ambil')) openPageDriver('ambil');
-  else openPageDriver('custom');
+  if (!activeChatOrder) return; navigatedFromChatRoom = true; const s = activeChatOrder.service.toLowerCase();
+  if (s.includes('jastip')) openPageDriver('jastip'); else if (s.includes('ojek')) openPageDriver('ojek'); else if (s.includes('ambil')) openPageDriver('ambil'); else openPageDriver('custom');
 }
 
 // ================= 10. KEUANGAN, TOKEN & LAPORAN =================
 function bukaModalResetT() {
-  const now = Date.now();
-  if (tokenLockoutUntil && now < tokenLockoutUntil) {
-    alert(`🔒 Input token dibekukan. Coba lagi dalam ${Math.ceil((tokenLockoutUntil - now) / 60000)} menit.`); return;
-  }
-  document.getElementById('lblResetCurrentLot').innerText = `Orderan Ke-${driverData.lot} (LOT ${driverData.lot})`;
-  document.getElementById('lblResetCurrentT').innerText = 'Rp ' + (driverData.t || 0).toLocaleString('id-ID');
-  document.getElementById('inputTokenDriver').value = '';
-  document.getElementById('resetErrorMsg').classList.add('hidden');
-  document.getElementById('modalResetT').classList.add('open');
+  const now = Date.now(); if (tokenLockoutUntil && now < tokenLockoutUntil) { alert(`🔒 Input token dibekukan. Coba lagi dalam ${Math.ceil((tokenLockoutUntil - now) / 60000)} menit.`); return; }
+  document.getElementById('lblResetCurrentLot').innerText = `Orderan Ke-${driverData.lot} (LOT ${driverData.lot})`; document.getElementById('lblResetCurrentT').innerText = 'Rp ' + (driverData.t || 0).toLocaleString('id-ID');
+  document.getElementById('inputTokenDriver').value = ''; document.getElementById('resetErrorMsg').classList.add('hidden'); document.getElementById('modalResetT').classList.add('open');
 }
 function tutupModalResetT() { document.getElementById('modalResetT').classList.remove('open'); }
-
 function verifikasiTokenDriver() {
-  const inputToken = document.getElementById('inputTokenDriver').value.trim();
-  const tokenValid = hitungTokenRahasia(driverData.lot, driverData.tgl);
+  const inputToken = document.getElementById('inputTokenDriver').value.trim(); const tokenValid = hitungTokenRahasia(driverData.lot, driverData.tgl);
   if (!inputToken) { alert("Masukkan 4-digit token dari Owner!"); return; }
   if (inputToken === tokenValid) {
-    failedTokenAttempts = 0;
-    const nominalLunas = driverData.t || 0; const lotLama = driverData.lot || 0;
-    driverData.lot = 0; driverData.k = 0; driverData.a = 0; driverData.f = 0; driverData.t = 0;
-    syncDriverToFormAndStorage(); updateFinancialDashboard();
+    failedTokenAttempts = 0; const nominalLunas = driverData.t || 0; const lotLama = driverData.lot || 0;
+    driverData.lot = 0; driverData.k = 0; driverData.a = 0; driverData.f = 0; driverData.t = 0; syncDriverToFormAndStorage(); updateFinancialDashboard();
     orderIncomeBook.unshift({ id: Date.now(), orderNum: 'SETOR', tanggal: getTodayString(), timestamp: Date.now(), time: new Date().toLocaleTimeString('id-ID'), serviceName: `🔄 PELUNASAN SETORAN & RESET LOT`, lotNo: `LOT ${lotLama} ➔ 0`, incomeDriver: 0, setoranT: 0, details: `Lunas Rp ${nominalLunas.toLocaleString('id-ID')} via Token OTP Sah`, billText: '' });
-    localStorage.setItem('nl_income_book', JSON.stringify(orderIncomeBook));
-    simpanDataDriverKeFirebase(); tutupModalResetT(); renderBukuKas();
-    alert("🎉 TOKEN VALID! Setoran (T) dan urutan LOT berhasil di-reset ke 0.");
+    localStorage.setItem('nl_income_book', JSON.stringify(orderIncomeBook)); simpanDataDriverKeFirebase(); tutupModalResetT(); renderBukuKas(); alert("🎉 TOKEN VALID! Setoran (T) dan urutan LOT berhasil di-reset ke 0.");
   } else {
-    failedTokenAttempts++;
-    const errBox = document.getElementById('resetErrorMsg'); errBox.classList.remove('hidden');
-    if (failedTokenAttempts >= 3) {
-      tokenLockoutUntil = Date.now() + (30 * 60 * 1000); failedTokenAttempts = 0;
-      errBox.innerText = "❌ Anda salah 3 kali! Fitur dibekukan selama 30 menit.";
-      alert("⚠️ Salah memasukkan token 3 kali! Sistem dibekukan 30 menit."); tutupModalResetT();
-    } else {
-      errBox.innerText = `❌ Token Salah! Sisa percobaan: ${3 - failedTokenAttempts}x lagi.`;
-    }
+    failedTokenAttempts++; const errBox = document.getElementById('resetErrorMsg'); errBox.classList.remove('hidden');
+    if (failedTokenAttempts >= 3) { tokenLockoutUntil = Date.now() + (30 * 60 * 1000); failedTokenAttempts = 0; errBox.innerText = "❌ Anda salah 3 kali! Fitur dibekukan selama 30 menit."; alert("⚠️ Salah memasukkan token 3 kali! Sistem dibekukan 30 menit."); tutupModalResetT(); } 
+    else { errBox.innerText = `❌ Token Salah! Sisa percobaan: ${3 - failedTokenAttempts}x lagi.`; }
   }
 }
-
 function bukaModalLoginOwner() { document.getElementById('drawer').classList.remove('open'); document.getElementById('inputMasterPin').value = ''; document.getElementById('modalLoginOwner').classList.add('open'); }
 function tutupModalLoginOwner() { document.getElementById('modalLoginOwner').classList.remove('open'); }
 function bukaGeneratorOwner() {
-  if (document.getElementById('inputMasterPin').value.trim() === MASTER_OWNER_PIN) {
-    tutupModalLoginOwner();
-    document.getElementById('inputGenLot').value = '';
-    document.getElementById('hasilTokenBox').classList.add('hidden');
-    document.getElementById('copySuccessAlert').classList.add('hidden');
-    switchOwnerPanelTab('token');
-    document.getElementById('modalGeneratorOwner').classList.add('open');
-  } else { alert("❌ Master PIN Owner Salah!"); }
+  if (document.getElementById('inputMasterPin').value.trim() === MASTER_OWNER_PIN) { tutupModalLoginOwner(); document.getElementById('inputGenLot').value = ''; document.getElementById('hasilTokenBox').classList.add('hidden'); document.getElementById('copySuccessAlert').classList.add('hidden'); switchOwnerPanelTab('token'); document.getElementById('modalGeneratorOwner').classList.add('open'); } 
+  else { alert("❌ Master PIN Owner Salah!"); }
 }
 function tutupModalGeneratorOwner() { document.getElementById('modalGeneratorOwner').classList.remove('open'); }
-
 function eksekusiBuatToken() {
-  const lotInput = document.getElementById('inputGenLot').value.trim();
-  if (!lotInput) { alert("Masukkan nomor LOT driver!"); return; }
-  const token = hitungTokenRahasia(lotInput, getTodayDDMMYY());
-  document.getElementById('displayOtpResult').innerText = token;
-  document.getElementById('hasilTokenBox').classList.remove('hidden'); document.getElementById('copySuccessAlert').classList.add('hidden');
+  const lotInput = document.getElementById('inputGenLot').value.trim(); if (!lotInput) { alert("Masukkan nomor LOT driver!"); return; }
+  const token = hitungTokenRahasia(lotInput, getTodayDDMMYY()); document.getElementById('displayOtpResult').innerText = token; document.getElementById('hasilTokenBox').classList.remove('hidden'); document.getElementById('copySuccessAlert').classList.add('hidden');
 }
-
 function salinKodeTokenKeClipboard() {
-  const token = document.getElementById('displayOtpResult').innerText.trim();
-  if (!token) return;
-  const finish = () => document.getElementById('copySuccessAlert').classList.remove('hidden');
-  if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(token).then(finish); } 
-  else { const dummy = document.createElement("textarea"); document.body.appendChild(dummy); dummy.value = token; dummy.select(); document.execCommand("copy"); document.body.removeChild(dummy); finish(); }
+  const token = document.getElementById('displayOtpResult').innerText.trim(); if (!token) return; const finish = () => document.getElementById('copySuccessAlert').classList.remove('hidden');
+  if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(token).then(finish); } else { const dummy = document.createElement("textarea"); document.body.appendChild(dummy); dummy.value = token; dummy.select(); document.execCommand("copy"); document.body.removeChild(dummy); finish(); }
 }
-
 function filterKeuanganHari(tab) {
-  currentKeuanganTab = tab;
-  const btnHariIni = document.getElementById('btnTabHariIni'); const btnRiwayat = document.getElementById('btnTabHariKemarin');
+  currentKeuanganTab = tab; const btnHariIni = document.getElementById('btnTabHariIni'); const btnRiwayat = document.getElementById('btnTabHariKemarin');
   if (tab === 'today') { btnHariIni.style.background = '#facc15'; btnHariIni.style.color = '#000'; btnHariIni.style.border = 'none'; btnRiwayat.style.background = 'rgba(0,0,0,0.4)'; btnRiwayat.style.color = '#fde047'; btnRiwayat.style.border = '1px solid #facc15'; document.getElementById('labelRincianPeriode').innerText = 'Ringkasan Hari Ini:'; } 
   else { btnRiwayat.style.background = '#facc15'; btnRiwayat.style.color = '#000'; btnRiwayat.style.border = 'none'; btnHariIni.style.background = 'rgba(0,0,0,0.4)'; btnHariIni.style.color = '#fde047'; btnHariIni.style.border = '1px solid #facc15'; document.getElementById('labelRincianPeriode').innerText = 'Ringkasan Riwayat Pesanan:'; }
   renderBukuKas();
 }
-
 function renderBukuKas() {
-  const tigaPuluhHariMs = 30 * 24 * 60 * 60 * 1000; const sekarang = Date.now();
-  orderIncomeBook = orderIncomeBook.filter(item => (sekarang - (item.timestamp || sekarang)) < tigaPuluhHariMs);
-  const todayStr = getTodayString();
-  const listEl = document.getElementById('listOrderanKeuangan'); const emptyEl = document.getElementById('emptyOrderanKeuangan');
+  const tigaPuluhHariMs = 30 * 24 * 60 * 60 * 1000; const sekarang = Date.now(); orderIncomeBook = orderIncomeBook.filter(item => (sekarang - (item.timestamp || sekarang)) < tigaPuluhHariMs);
+  const todayStr = getTodayString(); const listEl = document.getElementById('listOrderanKeuangan'); const emptyEl = document.getElementById('emptyOrderanKeuangan');
   const filtered = orderIncomeBook.filter(item => (currentKeuanganTab === 'today') ? (item.tanggal === todayStr) : (item.tanggal !== todayStr));
   const totIncome = filtered.reduce((acc, cur) => acc + (cur.incomeDriver || 0), 0); const totSetoran = driverData.t || 0;
   document.getElementById('detailTotalPendapatan').innerText = `Rp ${totIncome.toLocaleString('id-ID')}`; document.getElementById('detailTotalSetoranT').innerText = `Rp ${totSetoran.toLocaleString('id-ID')}`;
-
   if (filtered.length === 0) { emptyEl.style.display = 'block'; emptyEl.innerText = (currentKeuanganTab === 'today') ? 'Belum ada orderan hari ini.' : 'Belum ada riwayat pesanan sebelumnya.'; listEl.innerHTML = ''; return; }
   emptyEl.style.display = 'none';
   listEl.innerHTML = filtered.map(item => `
@@ -3235,38 +2517,24 @@ function renderBukuKas() {
       <div class="flex justify-between items-start"><div><span style="background:#facc15; color:#000; font-size:9px; padding:2px 6px; border-radius:4px; font-weight:900;">#${item.orderNum}</span><b class="text-yellow-300 ml-1" style="font-size:12px;">${item.serviceName}</b><div style="font-size:9.5px; color:#d1d5db; margin-top:2px;">${item.lotNo} — ${item.tanggal} (${item.time})</div></div>
       <div class="text-right"><div class="font-black text-green-400" style="font-size:12px;">${item.incomeDriver > 0 ? '+ Rp ' + item.incomeDriver.toLocaleString('id-ID') : '-'}</div><div style="font-size:9px; color:rgba(254,240,138,0.9);">Setor T: Rp ${item.setoranT.toLocaleString('id-ID')}</div></div></div>
       <div class="flex justify-between items-center italic" style="font-size:9px; color:#e5e7eb; margin-top:6px; border-top:1px solid rgba(255,255,255,0.1); padding-top:4px;"><span>${item.details}</span><span class="text-yellow-300 font-bold" style="font-size:8.5px;">${item.billText ? '🔍 Lihat Bill ➔' : ''}</span></div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
-
-function bukaBillDariBukuKas(itemId) {
-  const order = orderIncomeBook.find(o => o.id === itemId);
-  if (order && order.billText) tampilkanBill(order.billText, `STRUK: ${order.serviceName} (#ORDER ${order.orderNum})`, true); 
-}
-
+function bukaBillDariBukuKas(itemId) { const order = orderIncomeBook.find(o => o.id === itemId); if (order && order.billText) tampilkanBill(order.billText, `STRUK: ${order.serviceName} (#ORDER ${order.orderNum})`, true); }
 function catatKeBukuKas(serviceName, incomeDriver, totalSetoranTAkumulasi, details, billText, lotCode) {
-  const todayStr = getTodayString();
-  const todayOrders = orderIncomeBook.filter(item => item.tanggal === todayStr && item.orderNum !== 'SETOR');
-  const orderNum = todayOrders.length + 1;
+  const todayStr = getTodayString(); const todayOrders = orderIncomeBook.filter(item => item.tanggal === todayStr && item.orderNum !== 'SETOR'); const orderNum = todayOrders.length + 1;
   orderIncomeBook.unshift({ id: Date.now(), orderNum: orderNum, tanggal: todayStr, timestamp: Date.now(), time: new Date().toLocaleTimeString('id-ID'), serviceName: serviceName, lotNo: lotCode || `NL.${driverData.tgl}.${driverData.lot}`, incomeDriver: incomeDriver, setoranT: totalSetoranTAkumulasi, details: details, billText: billText || '' });
-  localStorage.setItem('nl_income_book', JSON.stringify(orderIncomeBook));
-  localStorage.setItem('nl_driver_income', accumulatedDriverIncome.toString());
-  simpanDataDriverKeFirebase();
+  localStorage.setItem('nl_income_book', JSON.stringify(orderIncomeBook)); localStorage.setItem('nl_driver_income', accumulatedDriverIncome.toString()); simpanDataDriverKeFirebase();
 }
-
 function kirimLaporanTeksKeAdmin() {
-  const todayStr = getTodayString();
-  const filtered = orderIncomeBook.filter(item => (currentKeuanganTab === 'today') ? (item.tanggal === todayStr) : (item.tanggal !== todayStr));
+  const todayStr = getTodayString(); const filtered = orderIncomeBook.filter(item => (currentKeuanganTab === 'today') ? (item.tanggal === todayStr) : (item.tanggal !== todayStr));
   if (filtered.length === 0) { alert("Belum ada data transaksi pada periode ini untuk dikirimkan."); return; }
   const totIncome = document.getElementById('detailTotalPendapatan').innerText; const totSetoran = document.getElementById('detailTotalSetoranT').innerText; const periode = document.getElementById('labelRincianPeriode').innerText.replace(':', '');
-  let detailTeks = "";
-  filtered.forEach(item => { detailTeks += `\n🔹 *[ORDER #${item.orderNum}] - ${item.serviceName}*\n▶️ *No. LOT:* ${item.lotNo}\n▶️ *Waktu:* ${item.tanggal} (${item.time})\n▶️ *Pendapatan:* Rp ${item.incomeDriver.toLocaleString('id-ID')}\n▶️ *Setoran T:* Rp ${item.setoranT.toLocaleString('id-ID')}\n▶️ *Sumber:* ${item.details}\n───────────────────────────`; });
+  let detailTeks = ""; filtered.forEach(item => { detailTeks += `\n🔹 *[ORDER #${item.orderNum}] - ${item.serviceName}*\n▶️ *No. LOT:* ${item.lotNo}\n▶️ *Waktu:* ${item.tanggal} (${item.time})\n▶️ *Pendapatan:* Rp ${item.incomeDriver.toLocaleString('id-ID')}\n▶️ *Setoran T:* Rp ${item.setoranT.toLocaleString('id-ID')}\n▶️ *Sumber:* ${item.details}\n───────────────────────────`; });
   const waMsg = `📊 *REKAP KEUANGAN DRIVER NEXT LEVEL* 📊\n═════════════════════════\n👤 *Driver:* ${driverData.driver} (${driverData.motor})\n📅 *Periode:* ${periode}\n💵 *Total Pendapatan:* *${totIncome}*\n📥 *Total Setoran Wajib (T):* *${totSetoran}*\n═════════════════════════\n\n📋 *RINCIAN TRANSAKSI:*${detailTeks}\n\n_Mohon diperiksa ya Admin! Terima kasih._ 🙏`;
   const waUrl = `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(waMsg)}`;
   lastReportSentDate = getTodayString(); localStorage.setItem('nl_last_report_date', lastReportSentDate); checkLockRule();
   setTimeout(() => { window.open(waUrl, '_blank'); }, 300);
 }
-
 function kirimKabarWaCepat(tipe) {
   let pesan = "";
   if (tipe === 'otw_toko') pesan = `Halo Kak! Driver Next Level (${driverData.driver}) sudah menerima pesanan kakak dan sekarang sedang meluncur ke lokasi pembelian 🛵💨`;
@@ -3274,36 +2542,24 @@ function kirimKabarWaCepat(tipe) {
   else if (tipe === 'otw_antar') pesan = `Kabar baik Kak! Belanjaan pesanan kakak sudah beres. Sekarang saya langsung OTW meluncur mengantar ke alamat kakak ya! 🚀`;
   setTimeout(() => { window.open(`https://wa.me/?text=${encodeURIComponent(pesan)}`, '_blank'); }, 200);
 }
-
 function pilihMetodeBayar(metode) {
-  currentPaymentMethod = metode;
-  const btnCash = document.getElementById('payMethodCash'); const btnTrf = document.getElementById('payMethodTransfer');
-  if (metode === 'TUNAI (COD)') { btnCash.classList.add('active'); btnTrf.classList.remove('active'); } 
-  else { btnTrf.classList.add('active'); btnCash.classList.remove('active'); }
+  currentPaymentMethod = metode; const btnCash = document.getElementById('payMethodCash'); const btnTrf = document.getElementById('payMethodTransfer');
+  if (metode === 'TUNAI (COD)') { btnCash.classList.add('active'); btnTrf.classList.remove('active'); } else { btnTrf.classList.add('active'); btnCash.classList.remove('active'); }
 }
-
 function panggilBantuanSOS() {
   if (!confirm("🚨 APAKAH ANDA BUTUH BANTUAN DARURAT DI JALAN?")) return;
   const pesan = `🚨 *PANGGILAN DARURAT (SOS ARMADA NEXT LEVEL)* 🚨\n\nAdmin & Rekan driver, saya *${driverData.driver}* (${driverData.motor}) sedang mengalami kendala darurat di jalan (mogok / ban bocor / butuh bantuan).\n\nMohon jika ada rekan terdekat segera merapat. Terima kasih! 🙏`;
   setTimeout(() => { window.open(`https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${encodeURIComponent(pesan)}`, '_blank'); }, 200);
 }
-
 function ambilOrderanMock(title, incDriver, poinFee) {
-  hentikanAlarmOrderan();
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadSt = hitungStatusLeadDriver(myNrp);
+  hentikanAlarmOrderan(); const myNrp = localStorage.getItem('nl_driver_nrp'); const leadSt = hitungStatusLeadDriver(myNrp);
   driverData.lot += 1; driverData.k += 2000; driverData.a += 1000;
-  const fTambahan = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(poinFee);
-  driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f + fTambahan);
-  driverData.t = driverData.k + driverData.a + driverData.f;
-  accumulatedDriverIncome += incDriver; syncDriverToFormAndStorage();
-  catatKontribusiOrderBulanan(myNrp);
-
+  const fTambahan = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(poinFee); driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f + fTambahan);
+  driverData.t = driverData.k + driverData.a + driverData.f; accumulatedDriverIncome += incDriver; syncDriverToFormAndStorage(); catatKontribusiOrderBulanan(myNrp);
   const lotCode = formatKodeLotDriver(driverData.tgl, driverData.lot, 'J', driverData.k, driverData.a, driverData.f, driverData.t);
   const textContent = `PESANAN: ${title}\nPendapatan Driver : + Rp ${incDriver.toLocaleString('id-ID')}\nSetoran T Wajib   : Rp ${driverData.t.toLocaleString('id-ID')}`;
   const mockBillText = buildReceiptPlainText("ORDER DISPATCH DITERIMA", lotCode, textContent, "0", "TUNAI (COD)");
-  catatKeBukuKas(title, incDriver, driverData.t, "Dispatch Order Masuk", mockBillText, lotCode);
-  updateFinancialDashboard(); alert(`Pesanan "${title}" berhasil diambil!`);
+  catatKeBukuKas(title, incDriver, driverData.t, "Dispatch Order Masuk", mockBillText, lotCode); updateFinancialDashboard(); alert(`Pesanan "${title}" berhasil diambil!`);
 }
 
 // ================= 11. FORM JASTIP, OJEK, DLL (DRAFT) =================
@@ -3311,32 +2567,21 @@ function saveJastipState() {
   const lokasiData = [];
   document.querySelectorAll('#jastipLokasi .lokasiBox').forEach(box => {
     const toko = box.querySelector('.jNama').value || ''; const prods = [];
-    box.querySelectorAll('.prodCardBox').forEach(r => {
-      prods.push({ nama: r.querySelector('.dNama').value || '', jml: r.querySelector('.dJml').value || '1', harga: r.querySelector('.dHarga').value || '0', rawFee: (r.querySelector('.feeVal') ? r.querySelector('.feeVal').getAttribute('data-fee') : '0') });
-    });
+    box.querySelectorAll('.prodCardBox').forEach(r => { prods.push({ nama: r.querySelector('.dNama').value || '', jml: r.querySelector('.dJml').value || '1', harga: r.querySelector('.dHarga').value || '0', rawFee: (r.querySelector('.feeVal') ? r.querySelector('.feeVal').getAttribute('data-fee') : '0') }); });
     lokasiData.push({ toko, prods });
   });
-  localStorage.setItem('nl_jastip_draft', JSON.stringify({
-    lokasi: lokasiData, extra: [], 
-    jarak: document.getElementById('jJarak') ? document.getElementById('jJarak').value : '1',
-    tunggu: document.getElementById('jTunggu') ? document.getElementById('jTunggu').value : '0',
-    parkir: document.getElementById('jParkir') ? document.getElementById('jParkir').value : '0',
-    sepakat: document.getElementById('jSepakat') ? document.getElementById('jSepakat').value : '0'
-  }));
+  localStorage.setItem('nl_jastip_draft', JSON.stringify({ lokasi: lokasiData, extra: [], jarak: document.getElementById('jJarak') ? document.getElementById('jJarak').value : '1', tunggu: document.getElementById('jTunggu') ? document.getElementById('jTunggu').value : '0', parkir: document.getElementById('jParkir') ? document.getElementById('jParkir').value : '0', sepakat: document.getElementById('jSepakat') ? document.getElementById('jSepakat').value : '0' }));
 }
-
 function restoreJastipState() {
   const raw = localStorage.getItem('nl_jastip_draft'); if (!raw) return false;
   try {
     const data = JSON.parse(raw); if (!data.lokasi || data.lokasi.length === 0) return false;
     document.getElementById('jastipLokasi').innerHTML = ''; jastipId = 0;
     data.lokasi.forEach(lok => {
-      jastipId++;
-      const div = document.createElement('div'); div.className = 'lokasiBox'; div.id = 'jlok-' + jastipId;
+      jastipId++; const div = document.createElement('div'); div.className = 'lokasiBox'; div.id = 'jlok-' + jastipId;
       div.innerHTML = `<div class="flex justify-between items-center mb-2"><b class="text-yellow-400 text-xs">LOKASI ${jastipId}</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('jlok-${jastipId}').remove(); saveJastipState();">HAPUS</button></div>
       <div class="field mb-2"><label>NAMA WARUNG / TOKO</label><input class="jNama" value="${lok.toko}" oninput="saveJastipState()"></div><div id="jprod-${jastipId}"></div><button class="btn-sm mt-2" onclick="addJastipProduk(${jastipId})">+ DESKRIPSI PRODUK</button>`;
-      document.getElementById('jastipLokasi').appendChild(div);
-      const pbox = div.querySelector('#jprod-' + jastipId);
+      document.getElementById('jastipLokasi').appendChild(div); const pbox = div.querySelector('#jprod-' + jastipId);
       if (lok.prods && lok.prods.length > 0) {
         lok.prods.forEach(p => {
           const pdiv = document.createElement('div'); pdiv.className = 'prodCardBox';
@@ -3344,97 +2589,54 @@ function restoreJastipState() {
           <textarea class="dNama" rows="1" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'; saveJastipState();">${p.nama}</textarea></div>
           <div class="flex items-end" style="gap:6px;"><div class="field" style="flex:0.6;"><label>JML</label><input class="dJml" type="text" inputmode="numeric" value="${p.jml}" oninput="recalcLokasi(${jastipId}); saveJastipState();"></div>
           <div class="field" style="flex:1;"><label>HARGA RP</label><input class="dHarga" type="text" inputmode="numeric" value="${p.harga}" oninput="recalcLokasi(${jastipId}); saveJastipState();"></div>
-          <div class="feeBadge" style="flex:1;">FEE <span class="feeVal ml-1" data-fee="${p.rawFee || 0}">-</span></div></div>`;
-          pbox.appendChild(pdiv);
-        });
-        recalcLokasi(jastipId);
+          <div class="feeBadge" style="flex:1;">FEE <span class="feeVal ml-1" data-fee="${p.rawFee || 0}">-</span></div></div>`; pbox.appendChild(pdiv);
+        }); recalcLokasi(jastipId);
       }
     });
-    if (document.getElementById('jJarak')) document.getElementById('jJarak').value = data.jarak || '1';
-    if (document.getElementById('jTunggu')) document.getElementById('jTunggu').value = data.tunggu || '0';
-    if (document.getElementById('jParkir')) document.getElementById('jParkir').value = data.parkir || '0';
-    if (document.getElementById('jSepakat')) document.getElementById('jSepakat').value = data.sepakat || '0';
+    if (document.getElementById('jJarak')) document.getElementById('jJarak').value = data.jarak || '1'; if (document.getElementById('jTunggu')) document.getElementById('jTunggu').value = data.tunggu || '0'; if (document.getElementById('jParkir')) document.getElementById('jParkir').value = data.parkir || '0'; if (document.getElementById('jSepakat')) document.getElementById('jSepakat').value = data.sepakat || '0';
     return true;
   } catch(e) { return false; }
 }
-
-function saveAmbilState() {
-  const loks = []; document.querySelectorAll('#ambilLokasi .lokasiBox').forEach(box => { loks.push(box.querySelector('.aNama') ? box.querySelector('.aNama').value : ''); });
-  localStorage.setItem('nl_ambil_draft', JSON.stringify({ lokasi: loks, jarak: document.getElementById('aJarak') ? document.getElementById('aJarak').value : '3', parkir: document.getElementById('aParkir') ? document.getElementById('aParkir').value : '0' }));
-}
+function saveAmbilState() { const loks = []; document.querySelectorAll('#ambilLokasi .lokasiBox').forEach(box => { loks.push(box.querySelector('.aNama') ? box.querySelector('.aNama').value : ''); }); localStorage.setItem('nl_ambil_draft', JSON.stringify({ lokasi: loks, jarak: document.getElementById('aJarak') ? document.getElementById('aJarak').value : '3', parkir: document.getElementById('aParkir') ? document.getElementById('aParkir').value : '0' })); }
 function restoreAmbilState() {
   const raw = localStorage.getItem('nl_ambil_draft'); if (!raw) return false;
   try {
     const data = JSON.parse(raw); if (!data.lokasi || data.lokasi.length === 0) return false;
     document.getElementById('ambilLokasi').innerHTML = ''; ambilId = 0;
-    data.lokasi.forEach(lokNama => {
-      ambilId++;
-      const div = document.createElement('div'); div.className = 'lokasiBox'; div.id = 'alok-' + ambilId;
-      div.innerHTML = `<div class="flex justify-between items-center mb-1"><b class="text-yellow-400 text-xs">LOKASI AMBIL ${ambilId}</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('alok-${ambilId}').remove(); saveAmbilState();">HAPUS</button></div>
-      <div class="field"><label>KETERANGAN BARANG & LOKASI</label><input class="aNama" value="${lokNama}" oninput="saveAmbilState()"></div>`;
-      document.getElementById('ambilLokasi').appendChild(div);
-    });
-    if (document.getElementById('aJarak')) document.getElementById('aJarak').value = data.jarak || '3';
-    if (document.getElementById('aParkir')) document.getElementById('aParkir').value = data.parkir || '0';
-    return true;
+    data.lokasi.forEach(lokNama => { ambilId++; const div = document.createElement('div'); div.className = 'lokasiBox'; div.id = 'alok-' + ambilId; div.innerHTML = `<div class="flex justify-between items-center mb-1"><b class="text-yellow-400 text-xs">LOKASI AMBIL ${ambilId}</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('alok-${ambilId}').remove(); saveAmbilState();">HAPUS</button></div><div class="field"><label>KETERANGAN BARANG & LOKASI</label><input class="aNama" value="${lokNama}" oninput="saveAmbilState()"></div>`; document.getElementById('ambilLokasi').appendChild(div); });
+    if (document.getElementById('aJarak')) document.getElementById('aJarak').value = data.jarak || '3'; if (document.getElementById('aParkir')) document.getElementById('aParkir').value = data.parkir || '0'; return true;
   } catch(e) { return false; }
 }
 function addAmbilLokasi() {
   ambilId++; const box = document.getElementById('ambilLokasi'); const div = document.createElement('div'); div.className = 'lokasiBox'; div.id = 'alok-' + ambilId;
-  div.innerHTML = `<div class="flex justify-between items-center mb-1"><b class="text-yellow-400 text-xs">LOKASI AMBIL ${ambilId}</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('alok-${ambilId}').remove(); saveAmbilState();">HAPUS</button></div>
-  <div class="field"><label>KETERANGAN BARANG & LOKASI</label><input class="aNama" value="Lokasi Pengambilan ${ambilId}" oninput="saveAmbilState()"></div>`;
-  box.appendChild(div); saveAmbilState();
+  div.innerHTML = `<div class="flex justify-between items-center mb-1"><b class="text-yellow-400 text-xs">LOKASI AMBIL ${ambilId}</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('alok-${ambilId}').remove(); saveAmbilState();">HAPUS</button></div><div class="field"><label>KETERANGAN BARANG & LOKASI</label><input class="aNama" value="Lokasi Pengambilan ${ambilId}" oninput="saveAmbilState()"></div>`; box.appendChild(div); saveAmbilState();
 }
-
 function saveOjekState() { localStorage.setItem('nl_ojek_draft', JSON.stringify({ jarak: document.getElementById('oJarak') ? document.getElementById('oJarak').value : '6' })); }
-function restoreOjekState() {
-  const raw = localStorage.getItem('nl_ojek_draft'); if (!raw) return false;
-  try { const data = JSON.parse(raw); if (document.getElementById('oJarak')) document.getElementById('oJarak').value = data.jarak || '6'; return true; } catch(e) { return false; }
-}
-
-function saveCustomState() {
-  localStorage.setItem('nl_custom_draft', JSON.stringify({
-    desc: document.getElementById('cDeskripsi') ? document.getElementById('cDeskripsi').value : '',
-    jarak: document.getElementById('cJarak') ? document.getElementById('cJarak').value : '5',
-    sepakat: document.getElementById('cSepakat') ? document.getElementById('cSepakat').value : '15000',
-    parkir: document.getElementById('cParkir') ? document.getElementById('cParkir').value : '0',
-    tunggu: document.getElementById('cTunggu') ? document.getElementById('cTunggu').value : '0'
-  }));
-}
+function restoreOjekState() { const raw = localStorage.getItem('nl_ojek_draft'); if (!raw) return false; try { const data = JSON.parse(raw); if (document.getElementById('oJarak')) document.getElementById('oJarak').value = data.jarak || '6'; return true; } catch(e) { return false; } }
+function saveCustomState() { localStorage.setItem('nl_custom_draft', JSON.stringify({ desc: document.getElementById('cDeskripsi') ? document.getElementById('cDeskripsi').value : '', jarak: document.getElementById('cJarak') ? document.getElementById('cJarak').value : '5', sepakat: document.getElementById('cSepakat') ? document.getElementById('cSepakat').value : '15000', parkir: document.getElementById('cParkir') ? document.getElementById('cParkir').value : '0', tunggu: document.getElementById('cTunggu') ? document.getElementById('cTunggu').value : '0' })); }
 function restoreCustomState() {
   const raw = localStorage.getItem('nl_custom_draft'); if (!raw) return false;
   try {
     const data = JSON.parse(raw);
-    if (document.getElementById('cDeskripsi')) document.getElementById('cDeskripsi').value = data.desc || '';
-    if (document.getElementById('cJarak')) document.getElementById('cJarak').value = data.jarak || '5';
-    if (document.getElementById('cSepakat')) document.getElementById('cSepakat').value = data.sepakat || '15000';
-    if (document.getElementById('cParkir')) document.getElementById('cParkir').value = data.parkir || '0';
-    if (document.getElementById('cTunggu')) document.getElementById('cTunggu').value = data.tunggu || '0';
-    return true;
+    if (document.getElementById('cDeskripsi')) document.getElementById('cDeskripsi').value = data.desc || ''; if (document.getElementById('cJarak')) document.getElementById('cJarak').value = data.jarak || '5';
+    if (document.getElementById('cSepakat')) document.getElementById('cSepakat').value = data.sepakat || '15000'; if (document.getElementById('cParkir')) document.getElementById('cParkir').value = data.parkir || '0'; if (document.getElementById('cTunggu')) document.getElementById('cTunggu').value = data.tunggu || '0'; return true;
   } catch(e) { return false; }
 }
-
 function addJastipLokasi() {
   jastipId++; const box = document.getElementById('jastipLokasi'); const div = document.createElement('div'); div.className = 'lokasiBox'; div.id = 'jlok-' + jastipId;
-  div.innerHTML = `<div class="flex justify-between items-center mb-2"><b class="text-yellow-400 text-xs">LOKASI ${jastipId}</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('jlok-${jastipId}').remove(); saveJastipState();">HAPUS</button></div>
-  <div class="field mb-2"><label>NAMA WARUNG / TOKO</label><input class="jNama" value="Warung ${jastipId}" oninput="saveJastipState()"></div><div id="jprod-${jastipId}"></div><button class="btn-sm mt-2" onclick="addJastipProduk(${jastipId})">+ DESKRIPSI PRODUK</button>`;
+  div.innerHTML = `<div class="flex justify-between items-center mb-2"><b class="text-yellow-400 text-xs">LOKASI ${jastipId}</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="document.getElementById('jlok-${jastipId}').remove(); saveJastipState();">HAPUS</button></div><div class="field mb-2"><label>NAMA WARUNG / TOKO</label><input class="jNama" value="Warung ${jastipId}" oninput="saveJastipState()"></div><div id="jprod-${jastipId}"></div><button class="btn-sm mt-2" onclick="addJastipProduk(${jastipId})">+ DESKRIPSI PRODUK</button>`;
   box.appendChild(div); addJastipProduk(jastipId); saveJastipState();
 }
-
 function addJastipProduk(lid) {
   const pbox = document.getElementById('jprod-' + lid); if (!pbox) return; const div = document.createElement('div'); div.className = 'prodCardBox';
-  div.innerHTML = `<div class="field mb-1.5"><div class="flex justify-between items-center"><label>NAMA / DESKRIPSI PRODUK</label><button class="text-red-300 font-bold" style="font-size:10px;" onclick="this.closest('.prodCardBox').remove(); recalcLokasi(${lid}); saveJastipState();">✕ Hapus</button></div>
-  <textarea class="dNama" rows="1" placeholder="Tulis nama barang..." style="resize:none; overflow:hidden;" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'; saveJastipState();"></textarea></div>
-  <div class="flex items-end" style="gap:6px;"><div class="field" style="flex:0.6;"><label>JUMLAH</label><input class="dJml" type="text" inputmode="numeric" value="1" oninput="recalcLokasi(${lid}); saveJastipState();"></div>
-  <div class="field" style="flex:1;"><label>HARGA RP</label><input class="dHarga" type="text" inputmode="numeric" value="0" oninput="recalcLokasi(${lid}); saveJastipState();"></div><div class="feeBadge" style="flex:1;">FEE <span class="feeVal ml-1" data-fee="0">-</span></div></div>`;
+  div.innerHTML = `<div class="field mb-1.5"><div class="flex justify-between items-center"><label>NAMA / DESKRIPSI PRODUK</label><button class="text-red-300 font-bold" style="font-size:10px;" onclick="this.closest('.prodCardBox').remove(); recalcLokasi(${lid}); saveJastipState();">✕ Hapus</button></div><textarea class="dNama" rows="1" placeholder="Tulis nama barang..." style="resize:none; overflow:hidden;" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'; saveJastipState();"></textarea></div>
+  <div class="flex items-end" style="gap:6px;"><div class="field" style="flex:0.6;"><label>JUMLAH</label><input class="dJml" type="text" inputmode="numeric" value="1" oninput="recalcLokasi(${lid}); saveJastipState();"></div><div class="field" style="flex:1;"><label>HARGA RP</label><input class="dHarga" type="text" inputmode="numeric" value="0" oninput="recalcLokasi(${lid}); saveJastipState();"></div><div class="feeBadge" style="flex:1;">FEE <span class="feeVal ml-1" data-fee="0">-</span></div></div>`;
   pbox.appendChild(div); recalcLokasi(lid); saveJastipState();
 }
-
 function recalcLokasi(lid) {
   const box = document.getElementById('jlok-' + lid); if (!box) return; const prods = [];
   box.querySelectorAll('.prodCardBox').forEach(r => { const h = parseInt(r.querySelector('.dHarga').value || 0); const q = parseInt(r.querySelector('.dJml').value || 0); if (h > 0 && q > 0) prods.push({ h, q, row: r }); });
-  const grups = {};
-  prods.forEach(p => { const g = getGrupHarga(p.h); if (!grups[g]) grups[g] = { totalHarga: 0, totalQty: 0, list: [] }; grups[g].totalHarga += p.h * p.q; grups[g].totalQty += p.q; grups[g].list.push(p); });
+  const grups = {}; prods.forEach(p => { const g = getGrupHarga(p.h); if (!grups[g]) grups[g] = { totalHarga: 0, totalQty: 0, list: [] }; grups[g].totalHarga += p.h * p.q; grups[g].totalQty += p.q; grups[g].list.push(p); });
   Object.keys(grups).forEach(g => {
     const gd = grups[g]; const feeGrup = (g === 'NEW2') ? gd.list.reduce((a, b) => a + getFeeTierNew2(b.h, b.q), 0) : hitungFeeGrup(g, gd.totalHarga, gd.totalQty); let feePerPcs = gd.totalQty > 0 ? Math.round(feeGrup / gd.totalQty) : 0;
     gd.list.forEach(item => { const b = item.row.querySelector('.feeVal'); if (b) { const rawFee = feePerPcs * item.q; b.setAttribute('data-fee', rawFee); b.innerText = formatFeeKVal(rawFee); } });
@@ -3443,29 +2645,23 @@ function recalcLokasi(lid) {
 
 function openTambahJasaModal(target) { activeTargetService = target; document.getElementById('modalTambahJasa').classList.add('open'); }
 function closeTambahJasaModal() { document.getElementById('modalTambahJasa').classList.remove('open'); }
-
 function pilihJasaEkstra(jenis, existingData = null, triggerSave = true) {
   closeTambahJasaModal(); const targetBox = document.getElementById(activeTargetService + 'ExtraServices'); if (!targetBox) return;
   const extraId = Date.now(); let blockHtml = '';
   if (jenis === 'ambil') {
     const valNama = existingData ? existingData.nama : ''; const valFee = existingData ? existingData.fee : '2000';
-    blockHtml = `<div class="extra-block" id="extra-${extraId}" data-type="ambil"><div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">📦 + JASA AMBIL BARANG</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div>
-    <div class="field mb-2"><label>KETERANGAN BARANG</label><input class="exAmbilNama" value="${valNama}" placeholder="Contoh: Baju laundry" oninput="saveJastipState()"></div><div class="field"><label>FEE AMBIL BARANG RP</label><input class="exAmbilFee" type="text" inputmode="numeric" value="${valFee}" oninput="saveJastipState()"></div></div>`;
+    blockHtml = `<div class="extra-block" id="extra-${extraId}" data-type="ambil"><div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">📦 + JASA AMBIL BARANG</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div><div class="field mb-2"><label>KETERANGAN BARANG</label><input class="exAmbilNama" value="${valNama}" placeholder="Contoh: Baju laundry" oninput="saveJastipState()"></div><div class="field"><label>FEE AMBIL BARANG RP</label><input class="exAmbilFee" type="text" inputmode="numeric" value="${valFee}" oninput="saveJastipState()"></div></div>`;
   } else if (jenis === 'ojek') {
     const valRute = existingData ? existingData.rute : ''; const valOngkir = existingData ? existingData.ongkir : '10000';
-    blockHtml = `<div class="extra-block" id="extra-${extraId}" data-type="ojek"><div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">🏍️ + JASA OJEK PANGGILAN</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div>
-    <div class="field mb-2"><label>RUTE OJEK</label><input class="exOjekRute" value="${valRute}" placeholder="Contoh: Titik Jemput ➔ Tujuan" oninput="saveJastipState()"></div><div class="field"><label>TARIF OJEK RP</label><input class="exOjekOngkir" type="text" inputmode="numeric" value="${valOngkir}" oninput="saveJastipState()"></div></div>`;
+    blockHtml = `<div class="extra-block" id="extra-${extraId}" data-type="ojek"><div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">🏍️ + JASA OJEK PANGGILAN</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div><div class="field mb-2"><label>RUTE OJEK</label><input class="exOjekRute" value="${valRute}" placeholder="Contoh: Titik Jemput ➔ Tujuan" oninput="saveJastipState()"></div><div class="field"><label>TARIF OJEK RP</label><input class="exOjekOngkir" type="text" inputmode="numeric" value="${valOngkir}" oninput="saveJastipState()"></div></div>`;
   } else if (jenis === 'custom') {
     const valDesc = existingData ? existingData.desc : ''; const valFee = existingData ? existingData.fee : '15000';
-    blockHtml = `<div class="extra-block" id="extra-${extraId}" data-type="custom"><div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">⭐ + JASA CUSTOM KHUSUS</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div>
-    <div class="field mb-2"><label>DESKRIPSI TUGAS KHUSUS</label><input class="exCustomDesc" value="${valDesc}" placeholder="Contoh: Antre obat" oninput="saveJastipState()"></div><div class="field"><label>FEE KESEPAKATAN RP</label><input class="exCustomFee" type="text" inputmode="numeric" value="${valFee}" oninput="saveJastipState()"></div></div>`;
+    blockHtml = `<div class="extra-block" id="extra-${extraId}" data-type="custom"><div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">⭐ + JASA CUSTOM KHUSUS</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div><div class="field mb-2"><label>DESKRIPSI TUGAS KHUSUS</label><input class="exCustomDesc" value="${valDesc}" placeholder="Contoh: Antre obat" oninput="saveJastipState()"></div><div class="field"><label>FEE KESEPAKATAN RP</label><input class="exCustomFee" type="text inputmode="numeric" value="${valFee}" oninput="saveJastipState()"></div></div>`;
   } else {
     const valNama = existingData ? existingData.nama : ''; const valBarang = existingData ? existingData.barang : '20000'; const valFee = existingData ? existingData.fee : '2000';
-    blockHtml = `<div class="extra-block" id="extra-${extraId}" data-type="jastip"><div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">🛍️ + JASTIP TAMBAHAN</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div>
-    <div class="field mb-2"><label>NAMA TOKO / BARANG BELANJA</label><input class="exJastipNama" value="${valNama}" placeholder="Contoh: Beli Kopi" oninput="saveJastipState()"></div><div class="flex" style="gap:8px;"><div class="field"><label>TOTAL BARANG RP</label><input class="exJastipBarang" type="text" inputmode="numeric" value="${valBarang}" oninput="saveJastipState()"></div><div class="field"><label>FEE JASTIP RP</label><input class="exJastipFee" type="text" inputmode="numeric" value="${valFee}" oninput="saveJastipState()"></div></div></div>`;
+    blockHtml = `<div class="extra-block" id="extra-${extraId}" data-type="jastip"><div class="flex justify-between items-center mb-2"><b class="text-yellow-300 text-xs">🛍️ + JASTIP TAMBAHAN</b><button class="btn-sm bg-transparent text-red-300 border-red-300" onclick="removeExtraService('${extraId}')">✕ HAPUS</button></div><div class="field mb-2"><label>NAMA TOKO / BARANG BELANJA</label><input class="exJastipNama" value="${valNama}" placeholder="Contoh: Beli Kopi" oninput="saveJastipState()"></div><div class="flex" style="gap:8px;"><div class="field"><label>TOTAL BARANG RP</label><input class="exJastipBarang" type="text" inputmode="numeric" value="${valBarang}" oninput="saveJastipState()"></div><div class="field"><label>FEE JASTIP RP</label><input class="exJastipFee" type="text" inputmode="numeric" value="${valFee}" oninput="saveJastipState()"></div></div></div>`;
   }
-  const wrapper = document.createElement('div'); wrapper.innerHTML = blockHtml; targetBox.appendChild(wrapper.firstElementChild);
-  if (triggerSave) { saveJastipState(); alert("Layanan berhasil digabungkan!"); }
+  const wrapper = document.createElement('div'); wrapper.innerHTML = blockHtml; targetBox.appendChild(wrapper.firstElementChild); if (triggerSave) { saveJastipState(); alert("Layanan berhasil digabungkan!"); }
 }
 function removeExtraService(id) { const el = document.getElementById('extra-' + id); if (el) el.remove(); saveJastipState(); }
 
@@ -3474,23 +2670,10 @@ function kumpulkanJasaTambahanText(targetPage) {
   const container = document.getElementById(targetPage + 'ExtraServices'); if (!container) return { text, extraBiayaTotal, extraFeeDriver, extraFeeCount };
   container.querySelectorAll('.extra-block').forEach((block) => {
     const type = block.getAttribute('data-type');
-    if (type === 'ambil') {
-      const nama = block.querySelector('.exAmbilNama').value || 'Ambil Barang'; const fee = parseInt(block.querySelector('.exAmbilFee').value || 0);
-      text += `\n[+ JASA AMBIL BARANG]\n- Barang: ${nama} : Rp ${fee.toLocaleString('id-ID')}`;
-      extraBiayaTotal += fee; extraFeeDriver += fee; if (fee > 0) extraFeeCount++;
-    } else if (type === 'ojek') {
-      const rute = block.querySelector('.exOjekRute').value || 'Rute Tambahan'; const ongkir = parseInt(block.querySelector('.exOjekOngkir').value || 0);
-      text += `\n[+ OJEK PANGGILAN TAMBAHAN]\n- Rute: ${rute} : Rp ${ongkir.toLocaleString('id-ID')}`;
-      extraBiayaTotal += ongkir; extraFeeDriver += ongkir; if (ongkir > 0) extraFeeCount++;
-    } else if (type === 'custom') {
-      const desc = block.querySelector('.exCustomDesc').value || 'Tugas Khusus'; const fee = parseInt(block.querySelector('.exCustomFee').value || 0);
-      text += `\n[+ TUGAS CUSTOM TAMBAHAN]\n- Tugas: ${desc} : Rp ${fee.toLocaleString('id-ID')}`;
-      extraBiayaTotal += fee; extraFeeDriver += fee; if (fee > 0) extraFeeCount++;
-    } else if (type === 'jastip') {
-      const nama = block.querySelector('.exJastipNama').value || 'Toko Lain'; const brg = parseInt(block.querySelector('.exJastipBarang').value || 0); const fee = parseInt(block.querySelector('.exJastipFee').value || 0);
-      text += `\n[+ JASTIP TAMBAHAN]\n- Titip: ${nama} : Rp ${brg.toLocaleString('id-ID')}\n  (Fee Penanganan: Rp ${fee.toLocaleString('id-ID')})`;
-      extraBiayaTotal += (brg + fee); extraFeeDriver += fee; if (fee > 0) extraFeeCount++;
-    }
+    if (type === 'ambil') { const nama = block.querySelector('.exAmbilNama').value || 'Ambil Barang'; const fee = parseInt(block.querySelector('.exAmbilFee').value || 0); text += `\n[+ JASA AMBIL BARANG]\n- Barang: ${nama} : Rp ${fee.toLocaleString('id-ID')}`; extraBiayaTotal += fee; extraFeeDriver += fee; if (fee > 0) extraFeeCount++; } 
+    else if (type === 'ojek') { const rute = block.querySelector('.exOjekRute').value || 'Rute Tambahan'; const ongkir = parseInt(block.querySelector('.exOjekOngkir').value || 0); text += `\n[+ OJEK PANGGILAN TAMBAHAN]\n- Rute: ${rute} : Rp ${ongkir.toLocaleString('id-ID')}`; extraBiayaTotal += ongkir; extraFeeDriver += ongkir; if (ongkir > 0) extraFeeCount++; } 
+    else if (type === 'custom') { const desc = block.querySelector('.exCustomDesc').value || 'Tugas Khusus'; const fee = parseInt(block.querySelector('.exCustomFee').value || 0); text += `\n[+ TUGAS CUSTOM TAMBAHAN]\n- Tugas: ${desc} : Rp ${fee.toLocaleString('id-ID')}`; extraBiayaTotal += fee; extraFeeDriver += fee; if (fee > 0) extraFeeCount++; } 
+    else if (type === 'jastip') { const nama = block.querySelector('.exJastipNama').value || 'Toko Lain'; const brg = parseInt(block.querySelector('.exJastipBarang').value || 0); const fee = parseInt(block.querySelector('.exJastipFee').value || 0); text += `\n[+ JASTIP TAMBAHAN]\n- Titip: ${nama} : Rp ${brg.toLocaleString('id-ID')}\n  (Fee Penanganan: Rp ${fee.toLocaleString('id-ID')})`; extraBiayaTotal += (brg + fee); extraFeeDriver += fee; if (fee > 0) extraFeeCount++; }
   });
   return { text, extraBiayaTotal, extraFeeDriver, extraFeeCount };
 }
@@ -3506,21 +2689,15 @@ function pasangUIBillSusulan() {
   if (homePage && !document.getElementById('activeBillBannerHome')) {
     const div = document.createElement('div'); div.id = 'activeBillBannerHome'; div.className = 'card hidden'; div.style.border = '2px solid #25d366'; div.style.background = 'rgba(6, 78, 59, 0.85)';
     div.innerHTML = `<div class="flex justify-between items-center mb-1"><span class="font-black text-yellow-300" style="font-size:11px;">📌 BILL AKTIF (BELUM SAMPAI / BELUM DITUTUP)</span><span id="lblActiveBillLot" style="font-size:10px; background:#facc15; color:#000; padding:2px 6px; border-radius:4px; font-weight:900;">LOT -</span></div>
-    <div id="lblActiveBillSummary" style="font-size:11px; color:#e5e7eb; margin-bottom:8px; line-height:1.4;"></div>
-    <div class="flex gap-2"><button type="button" class="btn-y flex-1" style="background:#facc15; color:#7a0f0f; font-size:11px; padding:10px 6px;" onclick="bukaModalBillSusulan()">➕ BUAT BILL SUSULAN</button>
-    <button type="button" class="btn-y flex-1" style="background:#10b981; color:#ffffff; font-size:11px; padding:10px 6px;" onclick="tutupBillAktifSelesai()">✅ TUTUP BILL (SELESAI)</button></div>`;
-    homePage.appendChild(div);
+    <div id="lblActiveBillSummary" style="font-size:11px; color:#e5e7eb; margin-bottom:8px; line-height:1.4;"></div><div class="flex gap-2"><button type="button" class="btn-y flex-1" style="background:#facc15; color:#7a0f0f; font-size:11px; padding:10px 6px;" onclick="bukaModalBillSusulan()">➕ BUAT BILL SUSULAN</button>
+    <button type="button" class="btn-y flex-1" style="background:#10b981; color:#ffffff; font-size:11px; padding:10px 6px;" onclick="tutupBillAktifSelesai()">✅ TUTUP BILL (SELESAI)</button></div>`; homePage.appendChild(div);
   }
-
   const actionsBar = document.getElementById('billActionsBar');
   if (actionsBar && !document.getElementById('btnSusulanFromReceipt')) {
-    actionsBar.style.flexWrap = 'wrap';
-    const extraBtns = document.createElement('div'); extraBtns.id = 'receiptSusulanWrap'; extraBtns.className = 'w-full flex gap-2 mb-1';
+    actionsBar.style.flexWrap = 'wrap'; const extraBtns = document.createElement('div'); extraBtns.id = 'receiptSusulanWrap'; extraBtns.className = 'w-full flex gap-2 mb-1';
     extraBtns.innerHTML = `<button type="button" id="btnSusulanFromReceipt" class="btn-y flex-1 font-black" style="background:#facc15; color:#7a0f0f; font-size:10.5px; padding:10px 6px;" onclick="bukaModalBillSusulan()">➕ BUAT BILL SUSULAN</button>
-    <button type="button" id="btnTutupBillFromReceipt" class="btn-y flex-1 font-black" style="background:#2563eb; color:#ffffff; font-size:10.5px; padding:10px 6px;" onclick="tutupBillAktifSelesai()">✅ TUTUP BILL (SELESAI)</button>`;
-    actionsBar.insertBefore(extraBtns, actionsBar.firstChild);
+    <button type="button" id="btnTutupBillFromReceipt" class="btn-y flex-1 font-black" style="background:#2563eb; color:#ffffff; font-size:10.5px; padding:10px 6px;" onclick="tutupBillAktifSelesai()">✅ TUTUP BILL (SELESAI)</button>`; actionsBar.insertBefore(extraBtns, actionsBar.firstChild);
   }
-
   if (!document.getElementById('modalBillSusulan')) {
     const modal = document.createElement('div'); modal.className = 'custom-modal'; modal.id = 'modalBillSusulan';
     modal.innerHTML = `
@@ -3535,8 +2712,7 @@ function pasangUIBillSusulan() {
         <div class="grid grid-cols-2 gap-2"><div class="field"><label>JARAK TERJAUH (KM)</label><input id="susulanJarakKm" type="text" inputmode="decimal" oninput="hitungOngkirSusulanDariKm()"></div><div class="field"><label>ONGKOS KIRIM BARU (RP)</label><input id="susulanOngkirRp" type="text" inputmode="numeric"></div></div></div>
         <div class="grid grid-cols-3 gap-2 mb-3"><div class="field"><label>+ TUNGGU (MNT)</label><input id="susulanTungguMnt" type="text" inputmode="numeric" value="0"></div><div class="field"><label>+ PARKIR (RP)</label><input id="susulanParkirRp" type="text" inputmode="numeric" value="0"></div><div class="field"><label>+ SEPAKAT (RP)</label><input id="susulanSepakatRp" type="text" inputmode="numeric" value="0"></div></div>
         <button type="button" class="btn-y w-full py-3" onclick="prosesCetakBillSusulan()">🚀 PROSES & CETAK BILL SUSULAN</button>
-      </div>`;
-    document.body.appendChild(modal);
+      </div>`; document.body.appendChild(modal);
   }
   renderBannerBillAktif();
 }
@@ -3546,9 +2722,7 @@ function renderBannerBillAktif() {
   if (activeOpenBill) {
     if (banner) { banner.classList.remove('hidden'); document.getElementById('lblActiveBillLot').innerText = `LOT ${activeOpenBill.lot}`; document.getElementById('lblActiveBillSummary').innerHTML = `<b>Layanan:</b> ${activeOpenBill.services.join(' + ')}<br><b>Ongkos Saat Ini:</b> Rp ${activeOpenBill.ongkir.toLocaleString('id-ID')} | <b>Grand Total:</b> Rp ${activeOpenBill.grandTotal.toLocaleString('id-ID')}`; }
     if (wrapReceipt) wrapReceipt.classList.remove('hidden');
-  } else {
-    if (banner) banner.classList.add('hidden'); if (wrapReceipt) wrapReceipt.classList.add('hidden');
-  }
+  } else { if (banner) banner.classList.add('hidden'); if (wrapReceipt) wrapReceipt.classList.add('hidden'); }
 }
 
 window.bukaModalBillSusulan = function() {
@@ -3561,63 +2735,36 @@ window.bukaModalBillSusulan = function() {
   gantiJenisLayananSusulan(); document.getElementById('modalBillSusulan').classList.add('open');
 };
 window.tutupModalBillSusulan = function() { document.getElementById('modalBillSusulan').classList.remove('open'); };
-window.gantiJenisLayananSusulan = function() {
-  const jns = document.getElementById('susulanJenisLayanan').value;
-  document.getElementById('boxSusulanJastip').classList.toggle('hidden', jns !== 'JASTIP SUSULAN');
-  document.getElementById('boxSusulanAmbil').classList.toggle('hidden', jns !== 'AMBIL PESANAN');
-  document.getElementById('boxSusulanCustom').classList.toggle('hidden', jns !== 'OJEK PANGGILAN' && jns !== 'JASA KHUSUS');
-};
-
+window.gantiJenisLayananSusulan = function() { const jns = document.getElementById('susulanJenisLayanan').value; document.getElementById('boxSusulanJastip').classList.toggle('hidden', jns !== 'JASTIP SUSULAN'); document.getElementById('boxSusulanAmbil').classList.toggle('hidden', jns !== 'AMBIL PESANAN'); document.getElementById('boxSusulanCustom').classList.toggle('hidden', jns !== 'OJEK PANGGILAN' && jns !== 'JASA KHUSUS'); };
 window.tambahBarisProdukSusulan = function() {
   const list = document.getElementById('susulanProdukList'); const div = document.createElement('div'); div.className = 'prodCardBox susulanProdRow';
   div.innerHTML = `<div class="field mb-1"><div class="flex justify-between items-center"><label>NAMA BARANG SUSULAN</label><button type="button" class="text-red-300 font-bold" style="font-size:10px; background:none; border:none;" onclick="this.closest('.susulanProdRow').remove(); hitungLiveFeeProdukSusulan();">✕ Hapus</button></div><input class="spNama" placeholder="Ketik barang tambahan..." oninput="hitungLiveFeeProdukSusulan()"></div>
-  <div class="flex items-end" style="gap:6px;"><div class="field" style="flex:0.6;"><label>JML</label><input class="spJml" type="text" inputmode="numeric" value="1" oninput="hitungLiveFeeProdukSusulan()"></div><div class="field" style="flex:1;"><label>HARGA SATUAN RP</label><input class="spHarga" type="text" inputmode="numeric" value="0" oninput="hitungLiveFeeProdukSusulan()"></div><div class="feeBadge" style="flex:0.9;">FEE <span class="spFeeVal ml-1" data-fee="0">0K</span></div></div>`;
-  list.appendChild(div);
+  <div class="flex items-end" style="gap:6px;"><div class="field" style="flex:0.6;"><label>JML</label><input class="spJml" type="text" inputmode="numeric" value="1" oninput="hitungLiveFeeProdukSusulan()"></div><div class="field" style="flex:1;"><label>HARGA SATUAN RP</label><input class="spHarga" type="text" inputmode="numeric" value="0" oninput="hitungLiveFeeProdukSusulan()"></div><div class="feeBadge" style="flex:0.9;">FEE <span class="spFeeVal ml-1" data-fee="0">0K</span></div></div>`; list.appendChild(div);
 };
 window.hitungLiveFeeProdukSusulan = function() {
-  const prods = [];
-  document.querySelectorAll('#susulanProdukList .susulanProdRow').forEach(r => {
-    const h = parseInt(r.querySelector('.spHarga').value || 0); const q = parseInt(r.querySelector('.spJml').value || 0); const b = r.querySelector('.spFeeVal');
-    if (h > 0 && q > 0) prods.push({ h, q, row: r }); else if (b) { b.setAttribute('data-fee', '0'); b.innerText = '0K'; }
-  });
+  const prods = []; document.querySelectorAll('#susulanProdukList .susulanProdRow').forEach(r => { const h = parseInt(r.querySelector('.spHarga').value || 0); const q = parseInt(r.querySelector('.spJml').value || 0); const b = r.querySelector('.spFeeVal'); if (h > 0 && q > 0) prods.push({ h, q, row: r }); else if (b) { b.setAttribute('data-fee', '0'); b.innerText = '0K'; } });
   const grups = {}; prods.forEach(p => { const g = getGrupHarga(p.h); if (!grups[g]) grups[g] = { totalHarga: 0, totalQty: 0, list: [] }; grups[g].totalHarga += p.h * p.q; grups[g].totalQty += p.q; grups[g].list.push(p); });
-  Object.keys(grups).forEach(g => {
-    const gd = grups[g];
-    const feeGrup = (g === 'NEW2') ? gd.list.reduce((a, b) => a + getFeeTierNew2(b.h, b.q), 0) : hitungFeeGrup(g, gd.totalHarga, gd.totalQty);
-    const feePerPcs = gd.totalQty > 0 ? Math.round(feeGrup / gd.totalQty) : 0;
-    gd.list.forEach(item => { const b = item.row.querySelector('.spFeeVal'); if (b) { const rawFee = feePerPcs * item.q; b.setAttribute('data-fee', rawFee); b.innerText = formatFeeKVal(rawFee); } });
-  });
+  Object.keys(grups).forEach(g => { const gd = grups[g]; const feeGrup = (g === 'NEW2') ? gd.list.reduce((a, b) => a + getFeeTierNew2(b.h, b.q), 0) : hitungFeeGrup(g, gd.totalHarga, gd.totalQty); const feePerPcs = gd.totalQty > 0 ? Math.round(feeGrup / gd.totalQty) : 0; gd.list.forEach(item => { const b = item.row.querySelector('.spFeeVal'); if (b) { const rawFee = feePerPcs * item.q; b.setAttribute('data-fee', rawFee); b.innerText = formatFeeKVal(rawFee); } }); });
 };
 window.hitungOngkirSusulanDariKm = function() { document.getElementById('susulanOngkirRp').value = getOngkir(parseFloat(document.getElementById('susulanJarakKm').value || 0)); };
 
 window.prosesCetakBillSusulan = function() {
   if (!activeOpenBill) return; hitungLiveFeeProdukSusulan();
   const jenis = document.getElementById('susulanJenisLayanan').value; const susulanNo = (activeOpenBill.susulanCount || 0) + 1;
-  let addBarang = 0; let addFeeNominal = 0; let addFeeComponents = 0;
-  let addBlockText = `\n----------------------------------------\n[SUSULAN #${susulanNo} - ${jenis}]`;
-  let addSummaryText = "";
+  let addBarang = 0, addFeeNominal = 0, addFeeComponents = 0, addBlockText = `\n----------------------------------------\n[SUSULAN #${susulanNo} - ${jenis}]`, addSummaryText = "";
 
   if (jenis === 'JASTIP SUSULAN') {
-    const toko = document.getElementById('susulanNamaToko').value || `Toko Susulan #${susulanNo}`;
-    addBlockText += `\nLOKASI SUSULAN: ${toko.toUpperCase()}`;
+    const toko = document.getElementById('susulanNamaToko').value || `Toko Susulan #${susulanNo}`; addBlockText += `\nLOKASI SUSULAN: ${toko.toUpperCase()}`;
     document.querySelectorAll('#susulanProdukList .susulanProdRow').forEach(r => {
       const nm = r.querySelector('.spNama').value || 'Produk Susulan'; const q = parseInt(r.querySelector('.spJml').value || 0); const h = parseInt(r.querySelector('.spHarga').value || 0); const feeVal = parseInt(r.querySelector('.spFeeVal').getAttribute('data-fee') || 0);
-      if (q > 0 && h > 0) {
-        addBarang += (h * q); addFeeNominal += feeVal; if (feeVal > 0) addFeeComponents++;
-        addBlockText += `\n- ${nm} (${q}x) : Rp ${(h*q).toLocaleString('id-ID')}\n  (Fee: ${formatFeeKVal(feeVal)})`;
-        addSummaryText += `• [Susulan] ${toko}: ${nm} (${q}x) - Rp ${(h*q).toLocaleString('id-ID')} [Fee: ${formatFeeKVal(feeVal)}]<br>`;
-      }
+      if (q > 0 && h > 0) { addBarang += (h * q); addFeeNominal += feeVal; if (feeVal > 0) addFeeComponents++; addBlockText += `\n- ${nm} (${q}x) : Rp ${(h*q).toLocaleString('id-ID')}\n  (Fee: ${formatFeeKVal(feeVal)})`; addSummaryText += `• [Susulan] ${toko}: ${nm} (${q}x) - Rp ${(h*q).toLocaleString('id-ID')} [Fee: ${formatFeeKVal(feeVal)}]<br>`; }
     });
   } else if (jenis === 'AMBIL PESANAN') {
     const ket = document.getElementById('susulanAmbilKet').value || 'Ambil Pesanan Susulan'; const titik = Math.max(1, parseInt(document.getElementById('susulanAmbilTitik').value || 1)); const feeAmbil = titik * 2000;
-    addFeeNominal += feeAmbil; addFeeComponents += titik;
-    addBlockText += `\n- Ambil: ${ket} (${titik} Titik) : Rp ${feeAmbil.toLocaleString('id-ID')}`;
-    addSummaryText += `• [Susulan] Ambil: ${ket} (${titik} titik) - Fee Rp ${feeAmbil.toLocaleString('id-ID')}<br>`;
+    addFeeNominal += feeAmbil; addFeeComponents += titik; addBlockText += `\n- Ambil: ${ket} (${titik} Titik) : Rp ${feeAmbil.toLocaleString('id-ID')}`; addSummaryText += `• [Susulan] Ambil: ${ket} (${titik} titik) - Fee Rp ${feeAmbil.toLocaleString('id-ID')}<br>`;
   } else {
     const ket = document.getElementById('susulanCustomKet').value || jenis; const biaya = parseInt(document.getElementById('susulanCustomBiaya').value || 0);
-    addFeeNominal += biaya; if (biaya > 0) addFeeComponents++;
-    addBlockText += `\n- ${jenis}: ${ket} : Rp ${biaya.toLocaleString('id-ID')}`;
-    addSummaryText += `• [Susulan] ${jenis}: ${ket} - Rp ${biaya.toLocaleString('id-ID')}<br>`;
+    addFeeNominal += biaya; if (biaya > 0) addFeeComponents++; addBlockText += `\n- ${jenis}: ${ket} : Rp ${biaya.toLocaleString('id-ID')}`; addSummaryText += `• [Susulan] ${jenis}: ${ket} - Rp ${biaya.toLocaleString('id-ID')}<br>`;
   }
 
   const addTungguMnt = parseInt(document.getElementById('susulanTungguMnt').value || 0); const addUangTunggu = getTunggu(addTungguMnt); const addParkir = parseInt(document.getElementById('susulanParkirRp').value || 0); const addSepakat = parseInt(document.getElementById('susulanSepakatRp').value || 0);
@@ -3628,24 +2775,19 @@ window.prosesCetakBillSusulan = function() {
   activeOpenBill.rincianBlocksText += addBlockText; activeOpenBill.lockedSummaryText += addSummaryText; activeOpenBill.subtotalBarang += addBarang; activeOpenBill.totalFeeProduk += addFeeNominal;
   activeOpenBill.ongkir = newOngkir; activeOpenBill.jarak = newJarak; activeOpenBill.parkir += addParkir; activeOpenBill.tungguMenit += addTungguMnt; activeOpenBill.uangTunggu += addUangTunggu; activeOpenBill.sepakat += addSepakat;
 
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadSt = hitungStatusLeadDriver(myNrp);
+  const myNrp = localStorage.getItem('nl_driver_nrp'); const leadSt = hitungStatusLeadDriver(myNrp);
   const combinedFeeComponents = (activeOpenBill.totalFeeComponents || 0) + addFeeComponents;
   const newFForOrder = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(combinedFeeComponents);
-  const oldFForOrder = activeOpenBill.appliedFForOrder || 0;
-  const selisihF = Math.max(0, newFForOrder - oldFForOrder);
+  const oldFForOrder = activeOpenBill.appliedFForOrder || 0; const selisihF = Math.max(0, newFForOrder - oldFForOrder);
   activeOpenBill.totalFeeComponents = combinedFeeComponents; activeOpenBill.appliedFForOrder = oldFForOrder + selisihF;
 
-  driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : ((driverData.f || 0) + selisihF);
-  driverData.t = (driverData.k || 0) + (driverData.a || 0) + (driverData.f || 0);
+  driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : ((driverData.f || 0) + selisihF); driverData.t = (driverData.k || 0) + (driverData.a || 0) + (driverData.f || 0);
   const newGrandTotal = activeOpenBill.subtotalBarang + activeOpenBill.totalFeeProduk + activeOpenBill.ongkir + activeOpenBill.uangTunggu + activeOpenBill.parkir + activeOpenBill.sepakat + activeOpenBill.extraBiayaTotal + 1000;
   const newIncomeDriver = activeOpenBill.ongkir + activeOpenBill.totalFeeProduk + activeOpenBill.sepakat + activeOpenBill.uangTunggu + activeOpenBill.extraFeeDriver;
   accumulatedDriverIncome += (newIncomeDriver - (activeOpenBill.incomeDriver || 0)); activeOpenBill.grandTotal = newGrandTotal; activeOpenBill.incomeDriver = newIncomeDriver;
 
-  const lotCode = formatKodeLotDriver(activeOpenBill.tgl, activeOpenBill.lot, 'J', driverData.k, driverData.a, driverData.f, driverData.t);
-  activeOpenBill.lotCode = lotCode;
-  const gabunganTitle = activeOpenBill.services.join(' + ');
-  const headerUpdateBanner = `*** BILL UPDATE / SUSULAN #${susulanNo} ***\n(${gabunganTitle})\n`;
+  const lotCode = formatKodeLotDriver(activeOpenBill.tgl, activeOpenBill.lot, 'J', driverData.k, driverData.a, driverData.f, driverData.t); activeOpenBill.lotCode = lotCode;
+  const gabunganTitle = activeOpenBill.services.join(' + '); const headerUpdateBanner = `*** BILL UPDATE / SUSULAN #${susulanNo} ***\n(${gabunganTitle})\n`;
   const biayaText = `\n----------------------------------------\nSubtotal Barang Gabungan : Rp ${activeOpenBill.subtotalBarang.toLocaleString('id-ID')}\nTotal Fee Layanan/Produk : Rp ${activeOpenBill.totalFeeProduk.toLocaleString('id-ID')} (${formatFeeKVal(activeOpenBill.totalFeeProduk)})\nOngkos Kirim (${activeOpenBill.jarak} km)   : Rp ${activeOpenBill.ongkir.toLocaleString('id-ID')}\nBiaya Parkir             : ${activeOpenBill.parkir > 0 ? 'Rp ' + activeOpenBill.parkir.toLocaleString('id-ID') : '-'}\nUang Tunggu (${activeOpenBill.tungguMenit} Menit)  : ${activeOpenBill.uangTunggu > 0 ? 'Rp ' + activeOpenBill.uangTunggu.toLocaleString('id-ID') : '-'}\nFee Kesepakatan          : ${activeOpenBill.sepakat > 0 ? 'Rp ' + activeOpenBill.sepakat.toLocaleString('id-ID') : '-'}\nBiaya Admin              : Rp 1.000`;
   const finalBillText = buildReceiptPlainText(`BILL UPDATE / SUSULAN (${gabunganTitle})`, lotCode, headerUpdateBanner + activeOpenBill.rincianBlocksText + biayaText, newGrandTotal.toLocaleString('id-ID'), activeOpenBill.payMethod);
 
@@ -3656,10 +2798,8 @@ window.prosesCetakBillSusulan = function() {
     localStorage.setItem('nl_income_book', JSON.stringify(orderIncomeBook));
   }
   localStorage.setItem('nl_driver_income', accumulatedDriverIncome.toString());
-
   lastGeneratedBillMeta = { service: `[BILL UPDATE / SUSULAN] ${gabunganTitle}`, lotCode: lotCode, grandTotal: newGrandTotal.toLocaleString('id-ID'), incomeDriver: newIncomeDriver.toLocaleString('id-ID'), setoranT: driverData.t.toLocaleString('id-ID'), payMethod: activeOpenBill.payMethod, isSusulan: true };
-  syncDriverToFormAndStorage(); updateFinancialDashboard(); simpanActiveOpenBill(); tutupModalBillSusulan();
-  tampilkanBill(finalBillText, `BILL UPDATE / SUSULAN #${susulanNo}`, false);
+  syncDriverToFormAndStorage(); updateFinancialDashboard(); simpanActiveOpenBill(); tutupModalBillSusulan(); tampilkanBill(finalBillText, `BILL UPDATE / SUSULAN #${susulanNo}`, false);
 };
 
 window.tutupBillAktifSelesai = function() {
@@ -3672,14 +2812,10 @@ function hitungKomponenDanSimpanBillAwal(jenisLayanan, rincianItemText, ringkasa
   const latestBookEntry = orderIncomeBook[0];
   activeOpenBill = {
     lot: driverData.lot, tgl: driverData.tgl, baseFBeforeOrder: (driverData.f || 0) - (fTambahan || 0), appliedFForOrder: fTambahan || 0, totalFeeComponents: feeItemCount || 0,
-    services: [jenisLayanan], rincianBlocksText: `[BILL AWAL - ${jenisLayanan}]\n${rincianItemText}${extra && extra.text ? extra.text : ''}`,
-    lockedSummaryText: ringkasanTeks, subtotalBarang: subtotalBarang || 0, totalFeeProduk: totalFeeProduk || 0, ongkir: ongkir || 0, jarak: jarak || 0, parkir: parkir || 0, uangTunggu: uangTunggu || 0, tungguMenit: tungguMenit || 0, sepakat: sepakat || 0,
-    extraBiayaTotal: (extra && extra.extraBiayaTotal) || 0, extraFeeDriver: (extra && extra.extraFeeDriver) || 0, grandTotal: totalBayar || 0, incomeDriver: incThisOrder || 0, payMethod: currentPaymentMethod || "TUNAI (COD)", susulanCount: 0, bookEntryId: latestBookEntry ? latestBookEntry.id : null, lotCode: lotCode
-  };
-  simpanActiveOpenBill();
+    services: [jenisLayanan], rincianBlocksText: `[BILL AWAL - ${jenisLayanan}]\n${rincianItemText}${extra && extra.text ? extra.text : ''}`, lockedSummaryText: ringkasanTeks, subtotalBarang: subtotalBarang || 0, totalFeeProduk: totalFeeProduk || 0, ongkir: ongkir || 0, jarak: jarak || 0, parkir: parkir || 0, uangTunggu: uangTunggu || 0, tungguMenit: tungguMenit || 0, sepakat: sepakat || 0, extraBiayaTotal: (extra && extra.extraBiayaTotal) || 0, extraFeeDriver: (extra && extra.extraFeeDriver) || 0, grandTotal: totalBayar || 0, incomeDriver: incThisOrder || 0, payMethod: currentPaymentMethod || "TUNAI (COD)", susulanCount: 0, bookEntryId: latestBookEntry ? latestBookEntry.id : null, lotCode: lotCode
+  }; simpanActiveOpenBill();
 }
 
-// STRUK RESMI BERFORMAT TEKS COPY-PASTE DENGAN NOMOR PENGADUAN 0881-0236-96881
 function buildReceiptPlainText(jenisStruk, lotCode, contentText, totalBayarStr, payMethod) {
   const tglWaktu = new Date().toLocaleString('id-ID');
   return `========================================
@@ -3715,15 +2851,15 @@ WhatsApp / Telp : ${CS_COMPLAINT_PHONE_DISPLAY}
 *Nota dibuat otomatis pada ${tglWaktu}*`;
 }
 
+// ---------------- PERBAIKAN FITUR BILL (LAPIS 2 & 3 KEAMANAN) ----------------
 function tampilkanBill(textString, title, isReviewOnly = false) {
+  isBillSentToAdmin = isReviewOnly; 
   currentGeneratedPlainBillText = textString;
   document.getElementById('billTitle').innerText = isReviewOnly ? `🔍 REVIEW: ${title}` : title;
   const container = document.getElementById('billTextFull');
   container.innerHTML = '';
   const preDiv = document.createElement('div');
-  preDiv.className = 'receipt-text-paper';
-  preDiv.id = 'receipt-print-area';
-  preDiv.textContent = textString;
+  preDiv.className = 'receipt-text-paper'; preDiv.id = 'receipt-print-area'; preDiv.textContent = textString;
   container.appendChild(preDiv);
   document.getElementById('billPage').classList.add('open');
 }
@@ -3732,62 +2868,61 @@ function copyBillTextToClipboard() {
   const el = document.getElementById('receipt-print-area');
   const txt = el ? el.textContent : currentGeneratedPlainBillText;
   if (!txt) return;
-  salinTeksKeClipboard(txt, "✅ Teks Bill berhasil disalin! Siap ditempel (Paste).");
+  
+  // 1. Salin teks ke memori HP (untuk dipaste ke customer nanti)
+  salinTeksKeClipboard(txt, "✅ Teks Bill disalin & diteruskan ke Admin!");
+  
+  // 2. Buka gembok keamanan
+  isBillSentToAdmin = true;
+  
+  // 3. LAPIS KETIGA: Otomatis lempar ke WA Admin
+  const waAdminMsg = encodeURIComponent("Laporan Bill Baru dari Driver:\n\n" + txt);
+  const waUrl = `https://wa.me/${ADMIN_WHATSAPP_NUMBER}?text=${waAdminMsg}`;
+  setTimeout(() => { window.open(waUrl, '_blank'); }, 600);
 }
 
 function closeBill() { 
+  const judulBill = document.getElementById('billTitle').innerText || "";
+  
+  // Pengecekan keamanan Lapis Ketiga (Mencegah driver asal keluar sebelum lapor Admin)
+  if (!isBillSentToAdmin && !judulBill.includes('REVIEW')) {
+    const konfirm = confirm("⚠️ TUNGGU DULU!\n\nAnda belum menekan tombol 'COPY BILL'. Bill ini belum diteruskan ke Admin!\n\nSilakan klik 'Batal', lalu tekan tombol 'COPY BILL' agar bill terkirim otomatis ke WA Admin sebagai laporan wajib (Lapis ke-3).\n\nTekan 'OK' jika Anda memaksakan diri untuk keluar tanpa melapor.");
+    if (!konfirm) return;
+  }
+  
   document.getElementById('billPage').classList.remove('open'); 
   if (activeBillServiceSource) { resetFormService(activeBillServiceSource); activeBillServiceSource = ''; }
+  isBillSentToAdmin = false; // Reset gembok
 }
+// -----------------------------------------------------------------------------
 
 function resetFormService(serviceType) {
-  if (serviceType === 'jastip') {
-    jastipId = 0; const box = document.getElementById('jastipLokasi'); if (box) box.innerHTML = ''; const extra = document.getElementById('jastipExtraServices'); if (extra) extra.innerHTML = '';
-    document.getElementById('jJarak').value = '1'; document.getElementById('jTunggu').value = '0'; document.getElementById('jParkir').value = '0'; document.getElementById('jSepakat').value = '0';
-    localStorage.removeItem('nl_jastip_draft'); addJastipLokasi();
-  } else if (serviceType === 'ojek') {
-    document.getElementById('oJarak').value = '1'; const extra = document.getElementById('ojekExtraServices'); if (extra) extra.innerHTML = ''; localStorage.removeItem('nl_ojek_draft');
-  } else if (serviceType === 'ambil') {
-    ambilId = 0; const box = document.getElementById('ambilLokasi'); if (box) box.innerHTML = ''; const extra = document.getElementById('ambilExtraServices'); if (extra) extra.innerHTML = '';
-    document.getElementById('aJarak').value = '1'; document.getElementById('aParkir').value = '0'; localStorage.removeItem('nl_ambil_draft'); addAmbilLokasi();
-  } else if (serviceType === 'custom') {
-    document.getElementById('cDeskripsi').value = ''; document.getElementById('cJarak').value = '1'; document.getElementById('cSepakat').value = '0'; document.getElementById('cParkir').value = '0'; document.getElementById('cTunggu').value = '0';
-    const extra = document.getElementById('customExtraServices'); if (extra) extra.innerHTML = ''; localStorage.removeItem('nl_custom_draft');
-  }
+  if (serviceType === 'jastip') { jastipId = 0; const box = document.getElementById('jastipLokasi'); if (box) box.innerHTML = ''; const extra = document.getElementById('jastipExtraServices'); if (extra) extra.innerHTML = ''; document.getElementById('jJarak').value = '1'; document.getElementById('jTunggu').value = '0'; document.getElementById('jParkir').value = '0'; document.getElementById('jSepakat').value = '0'; localStorage.removeItem('nl_jastip_draft'); addJastipLokasi(); } 
+  else if (serviceType === 'ojek') { document.getElementById('oJarak').value = '1'; const extra = document.getElementById('ojekExtraServices'); if (extra) extra.innerHTML = ''; localStorage.removeItem('nl_ojek_draft'); } 
+  else if (serviceType === 'ambil') { ambilId = 0; const box = document.getElementById('ambilLokasi'); if (box) box.innerHTML = ''; const extra = document.getElementById('ambilExtraServices'); if (extra) extra.innerHTML = ''; document.getElementById('aJarak').value = '1'; document.getElementById('aParkir').value = '0'; localStorage.removeItem('nl_ambil_draft'); addAmbilLokasi(); } 
+  else if (serviceType === 'custom') { document.getElementById('cDeskripsi').value = ''; document.getElementById('cJarak').value = '1'; document.getElementById('cSepakat').value = '0'; document.getElementById('cParkir').value = '0'; document.getElementById('cTunggu').value = '0'; const extra = document.getElementById('customExtraServices'); if (extra) extra.innerHTML = ''; localStorage.removeItem('nl_custom_draft'); }
 }
 
 buatBillJastip = function() {
   if (isSetoranLocked()) { alertSetoranLocked(); openPageDriver('home'); return; }
   if (!driverData.saved) { alert("Lengkapi profil driver!"); openPageDriver('home'); return; }
-  const jarak = parseFloat(document.getElementById('jJarak').value || 0); const tunggu = parseInt(document.getElementById('jTunggu').value || 0); const parkir = parseInt(document.getElementById('jParkir').value || 0); const sepakat = parseInt(document.getElementById('jSepakat').value || 0);
-  const ongkir = getOngkir(jarak); const uangTunggu = getTunggu(tunggu);
-  let totalBarang = 0, totalFee = 0, rincianText = "", ringkasanTeks = ""; let feeItemCount = 0;
+  const jarak = parseFloat(document.getElementById('jJarak').value || 0); const tunggu = parseInt(document.getElementById('jTunggu').value || 0); const parkir = parseInt(document.getElementById('jParkir').value || 0); const sepakat = parseInt(document.getElementById('jSepakat').value || 0); const ongkir = getOngkir(jarak); const uangTunggu = getTunggu(tunggu);
+  let totalBarang = 0, totalFee = 0, rincianText = "", ringkasanTeks = "", feeItemCount = 0;
 
   document.querySelectorAll('#jastipLokasi .lokasiBox').forEach((box, i) => {
-    const toko = box.querySelector('.jNama').value || `Warung ${i + 1}`;
-    rincianText += `\nLOKASI ${i+1}: ${toko.toUpperCase()}`;
+    const toko = box.querySelector('.jNama').value || `Warung ${i + 1}`; rincianText += `\nLOKASI ${i+1}: ${toko.toUpperCase()}`;
     box.querySelectorAll('.prodCardBox').forEach(r => {
-      const nm = r.querySelector('.dNama').value || 'Produk Jastip'; const q = parseInt(r.querySelector('.dJml').value || 0); const h = parseInt(r.querySelector('.dHarga').value || 0);
-      let feeVal = parseInt(r.querySelector('.feeVal').getAttribute('data-fee') || '0');
+      const nm = r.querySelector('.dNama').value || 'Produk Jastip'; const q = parseInt(r.querySelector('.dJml').value || 0); const h = parseInt(r.querySelector('.dHarga').value || 0); let feeVal = parseInt(r.querySelector('.feeVal').getAttribute('data-fee') || '0');
       totalBarang += (h * q); totalFee += feeVal; if (feeVal > 0) feeItemCount++;
-      rincianText += `\n- ${nm} (${q}x) : Rp ${(h*q).toLocaleString('id-ID')}\n  (Fee: ${formatFeeKVal(feeVal)})`;
-      ringkasanTeks += `• ${toko}: ${nm} (${q}x) - Rp ${(h*q).toLocaleString('id-ID')} [Fee: ${formatFeeKVal(feeVal)}]<br>`;
+      rincianText += `\n- ${nm} (${q}x) : Rp ${(h*q).toLocaleString('id-ID')}\n  (Fee: ${formatFeeKVal(feeVal)})`; ringkasanTeks += `• ${toko}: ${nm} (${q}x) - Rp ${(h*q).toLocaleString('id-ID')} [Fee: ${formatFeeKVal(feeVal)}]<br>`;
     });
   });
 
-  const extra = kumpulkanJasaTambahanText('jastip'); 
-  if (uangTunggu > 0) feeItemCount++; if (sepakat > 0) feeItemCount++; feeItemCount += extra.extraFeeCount;
+  const extra = kumpulkanJasaTambahanText('jastip'); if (uangTunggu > 0) feeItemCount++; if (sepakat > 0) feeItemCount++; feeItemCount += extra.extraFeeCount;
+  const myNrp = localStorage.getItem('nl_driver_nrp'); const leadSt = hitungStatusLeadDriver(myNrp);
+  driverData.lot += 1; driverData.k += 2000; driverData.a += 1000; const fTambahan = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(feeItemCount); driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f + fTambahan); driverData.t = driverData.k + driverData.a + driverData.f;
 
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadSt = hitungStatusLeadDriver(myNrp);
-  driverData.lot += 1; driverData.k += 2000; driverData.a += 1000;
-  const fTambahan = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(feeItemCount);
-  driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f + fTambahan);
-  driverData.t = driverData.k + driverData.a + driverData.f;
-
-  const totalBayar = totalBarang + totalFee + ongkir + uangTunggu + parkir + sepakat + extra.extraBiayaTotal + 1000;
-  const incThisOrder = (ongkir + totalFee + sepakat + uangTunggu + extra.extraFeeDriver); accumulatedDriverIncome += incThisOrder; syncDriverToFormAndStorage();
-  catatKontribusiOrderBulanan(myNrp);
+  const totalBayar = totalBarang + totalFee + ongkir + uangTunggu + parkir + sepakat + extra.extraBiayaTotal + 1000; const incThisOrder = (ongkir + totalFee + sepakat + uangTunggu + extra.extraFeeDriver); accumulatedDriverIncome += incThisOrder; syncDriverToFormAndStorage(); catatKontribusiOrderBulanan(myNrp);
 
   const lotCode = formatKodeLotDriver(driverData.tgl, driverData.lot, 'J', driverData.k, driverData.a, driverData.f, driverData.t);
   let biayaText = `\n----------------------------------------\nSubtotal Barang     : Rp ${totalBarang.toLocaleString('id-ID')}\nFee Jastip          : Rp ${totalFee.toLocaleString('id-ID')} (${formatFeeKVal(totalFee)})\nOngkos Kirim (${jarak} km): Rp ${ongkir.toLocaleString('id-ID')}\nBiaya Parkir        : ${parkir > 0 ? 'Rp ' + parkir.toLocaleString('id-ID') : '-'}\nUang Tunggu (${tunggu} mnt): ${tunggu > 0 ? 'Rp ' + uangTunggu.toLocaleString('id-ID') : '-'}\nFee Kesepakatan     : ${sepakat > 0 ? 'Rp ' + sepakat.toLocaleString('id-ID') : '-'}${extra.text}\nBiaya Admin         : Rp 1.000`;
@@ -3802,16 +2937,10 @@ buatBillOjek = function() {
   if (isSetoranLocked()) { alertSetoranLocked(); openPageDriver('home'); return; }
   if (!driverData.saved) { alert("Lengkapi profil driver!"); openPageDriver('home'); return; }
   const jarak = parseFloat(document.getElementById('oJarak').value || 0); const ongkir = getOngkir(jarak); const extra = kumpulkanJasaTambahanText('ojek');
+  const myNrp = localStorage.getItem('nl_driver_nrp'); const leadSt = hitungStatusLeadDriver(myNrp);
+  driverData.lot += 1; driverData.k += 2000; driverData.a += 1000; const fTambahan = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(extra.extraFeeCount); driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f + fTambahan); driverData.t = driverData.k + driverData.a + driverData.f;
 
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadSt = hitungStatusLeadDriver(myNrp);
-  driverData.lot += 1; driverData.k += 2000; driverData.a += 1000;
-  const fTambahan = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(extra.extraFeeCount);
-  driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f + fTambahan);
-  driverData.t = driverData.k + driverData.a + driverData.f;
-
-  const totalBayar = ongkir + extra.extraBiayaTotal + 1000; const incThisOrder = (ongkir + extra.extraFeeDriver); accumulatedDriverIncome += incThisOrder; syncDriverToFormAndStorage();
-  catatKontribusiOrderBulanan(myNrp);
+  const totalBayar = ongkir + extra.extraBiayaTotal + 1000; const incThisOrder = (ongkir + extra.extraFeeDriver); accumulatedDriverIncome += incThisOrder; syncDriverToFormAndStorage(); catatKontribusiOrderBulanan(myNrp);
 
   const lotCode = formatKodeLotDriver(driverData.tgl, driverData.lot, 'O', driverData.k, driverData.a, driverData.f, driverData.t);
   const rincianText = `- Layanan Ojek Panggilan (${jarak} km) : Rp ${ongkir.toLocaleString('id-ID')}`;
@@ -3827,19 +2956,14 @@ buatBillAmbil = function() {
   if (isSetoranLocked()) { alertSetoranLocked(); openPageDriver('home'); return; }
   if (!driverData.saved) { alert("Lengkapi profil driver!"); openPageDriver('home'); return; }
   const jarak = parseFloat(document.getElementById('aJarak').value || 0); const parkir = parseInt(document.getElementById('aParkir').value || 0);
-  let rincianText = "", ringkasanTeks = ""; let lokJml = 0;
+  let rincianText = "", ringkasanTeks = "", lokJml = 0;
   document.querySelectorAll('#ambilLokasi .lokasiBox').forEach((box, i) => { lokJml++; const aNama = box.querySelector('.aNama').value || `Lokasi Pengambilan ${i + 1}`; rincianText += `\n- ${aNama} (Lunas)`; ringkasanTeks += `• Ambil Pesanan: ${aNama} (Fee Rp 2.000)<br>`; });
   const feeAmbil = lokJml * 2000; const ongkir = getOngkir(jarak); const extra = kumpulkanJasaTambahanText('ambil'); const feeCount = lokJml + extra.extraFeeCount;
 
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadSt = hitungStatusLeadDriver(myNrp);
-  driverData.lot += 1; driverData.k += 2000; driverData.a += 1000;
-  const fTambahan = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(feeCount);
-  driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f + fTambahan);
-  driverData.t = driverData.k + driverData.a + driverData.f;
+  const myNrp = localStorage.getItem('nl_driver_nrp'); const leadSt = hitungStatusLeadDriver(myNrp);
+  driverData.lot += 1; driverData.k += 2000; driverData.a += 1000; const fTambahan = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(feeCount); driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f + fTambahan); driverData.t = driverData.k + driverData.a + driverData.f;
 
-  const totalBayar = ongkir + feeAmbil + parkir + extra.extraBiayaTotal + 1000; const incThisOrder = (ongkir + feeAmbil + extra.extraFeeDriver); accumulatedDriverIncome += incThisOrder; syncDriverToFormAndStorage();
-  catatKontribusiOrderBulanan(myNrp);
+  const totalBayar = ongkir + feeAmbil + parkir + extra.extraBiayaTotal + 1000; const incThisOrder = (ongkir + feeAmbil + extra.extraFeeDriver); accumulatedDriverIncome += incThisOrder; syncDriverToFormAndStorage(); catatKontribusiOrderBulanan(myNrp);
 
   const lotCode = formatKodeLotDriver(driverData.tgl, driverData.lot, 'A', driverData.k, driverData.a, driverData.f, driverData.t);
   let biayaText = `\n----------------------------------------\nFee Pengambilan (${lokJml} Titik) : Rp ${feeAmbil.toLocaleString('id-ID')}\nOngkos Kirim (${jarak} km)       : Rp ${ongkir.toLocaleString('id-ID')}\nBiaya Parkir              : ${parkir > 0 ? 'Rp ' + parkir.toLocaleString('id-ID') : '-'}\nUang Tunggu (0 Menit)     : -\nFee Kesepakatan           : -${extra.text}\nBiaya Admin               : Rp 1.000`;
@@ -3857,15 +2981,10 @@ buatBillCustom = function() {
   const ongkir = getOngkir(jarak); const uangTunggu = getTunggu(tunggu); const extra = kumpulkanJasaTambahanText('custom');
   let feeCount = 0; if (sepakat > 0) feeCount++; if (uangTunggu > 0) feeCount++; feeCount += extra.extraFeeCount;
 
-  const myNrp = localStorage.getItem('nl_driver_nrp');
-  const leadSt = hitungStatusLeadDriver(myNrp);
-  driverData.lot += 1; driverData.k += 2000; driverData.a += 1000;
-  const fTambahan = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(feeCount);
-  driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f + fTambahan);
-  driverData.t = driverData.k + driverData.a + driverData.f;
+  const myNrp = localStorage.getItem('nl_driver_nrp'); const leadSt = hitungStatusLeadDriver(myNrp);
+  driverData.lot += 1; driverData.k += 2000; driverData.a += 1000; const fTambahan = (leadSt.isLead && leadSt.exemptF) ? 0 : hitungKonversiF(feeCount); driverData.f = (leadSt.isLead && leadSt.exemptF) ? 0 : (driverData.f + fTambahan); driverData.t = driverData.k + driverData.a + driverData.f;
 
-  const totalBayar = ongkir + sepakat + parkir + uangTunggu + extra.extraBiayaTotal + 1000; const incThisOrder = (ongkir + sepakat + uangTunggu + extra.extraFeeDriver); accumulatedDriverIncome += incThisOrder; syncDriverToFormAndStorage();
-  catatKontribusiOrderBulanan(myNrp);
+  const totalBayar = ongkir + sepakat + parkir + uangTunggu + extra.extraBiayaTotal + 1000; const incThisOrder = (ongkir + sepakat + uangTunggu + extra.extraFeeDriver); accumulatedDriverIncome += incThisOrder; syncDriverToFormAndStorage(); catatKontribusiOrderBulanan(myNrp);
 
   const lotCode = formatKodeLotDriver(driverData.tgl, driverData.lot, 'C', driverData.k, driverData.a, driverData.f, driverData.t);
   let rincianText = `TUGAS: ${desc}`;
@@ -3878,13 +2997,7 @@ buatBillCustom = function() {
 };
 
 // ================= 13. FIREBASE LISTENER & PEMULIHAN SESI SAT-SET =================
-async function cariDataDriverDiFirebase(nrp) {
-  return await ambilDataDriverCepat(nrp);
-}
-
-function mainkanSuaraOrderanBaru() {
-  mulaiAlarmOrderan();
-}
+function mainkanSuaraOrderanBaru() { mulaiAlarmOrderan(); }
 
 db.ref("chat_orders").once("value", (snapshot) => {
   snapshot.forEach(child => {
@@ -3895,15 +3008,9 @@ db.ref("chat_orders").once("value", (snapshot) => {
       chatOrderDatabase.unshift({ id: id, customerName: data.customerName || "Pelanggan", phone: data.phone || "-", service: data.service || "Jastip", serviceIcon: data.serviceIcon || "🛍️", status: data.status || "antrean", lastMessage: data.lastMessage || "Masuk", time: data.time || "", history: historyArr });
     }
   });
-  isInitialOrdersSynced = true;
-  renderChatInbox();
-
-  const savedPage = localStorage.getItem('nl_active_driver_page');
-  const lastChatId = localStorage.getItem('nl_last_chat_order_id');
-  if (savedPage === 'chat-room' && lastChatId) {
-    const foundOrd = chatOrderDatabase.find(o => o.id === lastChatId);
-    if (foundOrd) bukaChatLangsung(lastChatId, false);
-  }
+  isInitialOrdersSynced = true; renderChatInbox();
+  const savedPage = localStorage.getItem('nl_active_driver_page'); const lastChatId = localStorage.getItem('nl_last_chat_order_id');
+  if (savedPage === 'chat-room' && lastChatId) { const foundOrd = chatOrderDatabase.find(o => o.id === lastChatId); if (foundOrd) bukaChatLangsung(lastChatId, false); }
 });
 
 db.ref("chat_orders").on("child_added", (snapshot) => {
@@ -3913,8 +3020,7 @@ db.ref("chat_orders").on("child_added", (snapshot) => {
   if (!existing) {
     let historyArr = []; if (data.messages) { Object.values(data.messages).forEach(m => historyArr.push(m)); } else if (Array.isArray(data.history)) { historyArr = data.history; }
     chatOrderDatabase.unshift({ id: id, customerName: data.customerName || "Pelanggan", phone: data.phone || "-", service: data.service || "Jastip", serviceIcon: data.serviceIcon || "🛍️", status: data.status || "antrean", lastMessage: data.lastMessage || "Baru", time: data.time || new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), history: historyArr });
-    renderChatInbox();
-    if (data.status === 'antrean') mulaiAlarmOrderan();
+    renderChatInbox(); if (data.status === 'antrean') mulaiAlarmOrderan();
   }
 });
 
@@ -3925,64 +3031,67 @@ function jalankanSesiSatSet() {
 
   pasangIkonDanManifestNextLevel();
   if (document.getElementById('fTgl')) document.getElementById('fTgl').value = getTodayDDMMYY();
-  hentikanAlarmOrderan();
-  pasangUIBillSusulan();
-  renderChatInbox();
+  hentikanAlarmOrderan(); pasangUIBillSusulan(); renderChatInbox();
 
-  const savedIncome = localStorage.getItem('nl_driver_income');
-  if (savedIncome) accumulatedDriverIncome = parseInt(savedIncome) || 0;
-
-  const savedOrders = localStorage.getItem('nl_income_book');
-  if (savedOrders) { try { orderIncomeBook = JSON.parse(savedOrders); } catch (e) {} }
+  const savedIncome = localStorage.getItem('nl_driver_income'); if (savedIncome) accumulatedDriverIncome = parseInt(savedIncome) || 0;
+  const savedOrders = localStorage.getItem('nl_income_book'); if (savedOrders) { try { orderIncomeBook = JSON.parse(savedOrders); } catch (e) {} }
 
   const savedDriver = localStorage.getItem('nl_driver_data');
-  if (savedDriver) {
-    try {
-      const parsed = JSON.parse(savedDriver);
-      if (parsed) terapkanDataDriverKeUI(parsed);
-    } catch (e) {}
-  }
+  if (savedDriver) { try { const parsed = JSON.parse(savedDriver); if (parsed) terapkanDataDriverKeUI(parsed); } catch (e) {} }
 
   const savedNrp = localStorage.getItem('nl_driver_nrp');
 
   if (savedNrp && (localStorage.getItem('nl_session_unlocked') === 'true')) {
-    localStorage.setItem('nl_session_time', Date.now().toString());
-    localStorage.setItem('nl_active_screen', 'screen-driver');
+    localStorage.setItem('nl_session_time', Date.now().toString()); localStorage.setItem('nl_active_screen', 'screen-driver');
+    const haloNrpEl = document.getElementById('haloNrp'); if (haloNrpEl) haloNrpEl.innerText = savedNrp;
+    const savedDriverPage = localStorage.getItem('nl_active_driver_page') || 'home'; const halamanTujuan = (savedDriverPage === 'chat-room' && !activeChatOrder) ? 'chat-inbox' : savedDriverPage;
 
-    const haloNrpEl = document.getElementById('haloNrp');
-    if (haloNrpEl) haloNrpEl.innerText = savedNrp;
+    switchMainScreen('screen-driver', false); openPageDriver(halamanTujuan, false);
 
-    const savedDriverPage = localStorage.getItem('nl_active_driver_page') || 'home';
-    const halamanTujuan = (savedDriverPage === 'chat-room' && !activeChatOrder) ? 'chat-inbox' : savedDriverPage;
-
-    switchMainScreen('screen-driver', false);
-    openPageDriver(halamanTujuan, false);
-
+    // =========================================================================
+    // PERBAIKAN BUG ANTI DATA MUNDUR KARENA SINYAL JELEK & GANTI HARI:
     ambilDataDriverCepat(savedNrp).then(remoteData => {
-      if (remoteData) terapkanDataDriverKeUI(remoteData);
+      if (remoteData) {
+        const localLot = driverData ? parseInt(driverData.lot || 0) : 0;
+        const remoteLot = parseInt(remoteData.lot || 0);
+        const localBookLen = Array.isArray(orderIncomeBook) ? orderIncomeBook.length : 0;
+        const remoteBookLen = Array.isArray(remoteData.orderIncomeBook) ? remoteData.orderIncomeBook.length : 0;
+        
+        // JIKA LOT ATAU JUMLAH ORDER DI HP LEBIH BESAR, JANGAN DITIMPA DARI FIREBASE!
+        // INI ARTINYA SINYAL SEBELUMNYA PUTUS, MAKA TEMBAK ULANG DATA LOKAL KE FIREBASE MESKI BEDA TANGGAL.
+        if (localLot > remoteLot || localBookLen > remoteBookLen) {
+          simpanDataDriverKeFirebase();
+        } else {
+          terapkanDataDriverKeUI(remoteData);
+        }
+      }
       else if (driverData && driverData.saved) simpanDataDriverKeFirebase();
-      perbaruiStatusVerifikasiSusulanUI();
-      evaluasiStatusLeadDriverSaya();
+      
+      perbaruiStatusVerifikasiSusulanUI(); evaluasiStatusLeadDriverSaya();
     }).catch(() => {});
+    // =========================================================================
+
   } else if (savedNrp && localStorage.getItem('nl_session_unlocked') !== 'true') {
-    if (document.getElementById('loginNrpInput')) document.getElementById('loginNrpInput').value = savedNrp;
-    switchMainScreen('screen-login', false);
-  } else {
-    switchMainScreen('screen-landing', false);
-  }
+    if (document.getElementById('loginNrpInput')) document.getElementById('loginNrpInput').value = savedNrp; switchMainScreen('screen-login', false);
+  } else { switchMainScreen('screen-landing', false); }
 
-  perbaruiStatusVerifikasiSusulanUI();
-  evaluasiStatusLeadDriverSaya();
-  updateFinancialDashboard();
-  checkLockRule();
+  perbaruiStatusVerifikasiSusulanUI(); evaluasiStatusLeadDriverSaya(); updateFinancialDashboard(); checkLockRule();
 }
 
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', jalankanSesiSatSet);
-} else {
-  jalankanSesiSatSet();
-}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', jalankanSesiSatSet); } else { jalankanSesiSatSet(); }
 window.addEventListener('load', jalankanSesiSatSet);
+
+// ================= PERLINDUNGAN ANTI KELUAR TANPA LAPOR ADMIN =================
+window.addEventListener('beforeunload', function (e) {
+  const judulBill = document.getElementById('billTitle') ? document.getElementById('billTitle').innerText : "";
+  const billPage = document.getElementById('billPage');
+  
+  if (billPage && billPage.classList.contains('open') && !isBillSentToAdmin && !judulBill.includes('REVIEW')) {
+    e.preventDefault();
+    e.returnValue = 'Bill belum dikirim ke Admin, yakin ingin keluar?';
+  }
+});
+
 </script>
 </body>
 </html>
